@@ -114,7 +114,7 @@
         border-radius: 50%;
         border: none;
         background-color: rgba(0, 0, 0, 0.3);
-        color: #666;
+        color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -186,6 +186,42 @@
         .image-comparison-container,
         .params-control-container {
           width: 100%;
+        }
+      }
+
+      /* 瀑布流样式 - 移除图片白色边框 */
+      .masonry-container {
+        column-count: 3;
+        column-gap: 16px;
+        width: 100%;
+      }
+
+      .masonry-item {
+        break-inside: avoid;
+        margin-bottom: 16px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: none;
+      }
+
+      .created-image-item img {
+        width: 100%;
+        display: block;
+        border: none;
+        background: none;
+      }
+
+      /* 响应式瀑布流 */
+      @media (max-width: 768px) {
+        .masonry-container {
+          column-count: 2;
+          column-gap: 12px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .masonry-container {
+          column-count: 1;
         }
       }
 
@@ -512,13 +548,13 @@
                         class="action-btn favorite-btn"
                         data-image-id="{{ image.id }}"
                       >
-                        <i class="fa fa-heart-o"></i>
+                        <img src="{{ url_for('static', filename='icons/heart.svg') }}" alt="喜欢" width="16" height="16" />
                       </button>
                       <button
                         class="action-btn delete-btn"
                         data-image-id="{{ image.id }}"
                       >
-                        <i class="fa fa-trash-o"></i>
+                        <img src="{{ url_for('static', filename='icons/trash.svg') }}" alt="删除" width="16" height="16" />
                       </button>
                     </div>
                   </div>
@@ -537,13 +573,13 @@
                         class="action-btn favorite-btn"
                         data-image-id="example1"
                       >
-                        <i class="fa fa-heart-o"></i>
+                        <img src="{{ url_for('static', filename='icons/heart.svg') }}" alt="喜欢" width="16" height="16" />
                       </button>
                       <button
                         class="action-btn delete-btn"
                         data-image-id="example1"
                       >
-                        <i class="fa fa-trash-o"></i>
+                        <img src="{{ url_for('static', filename='icons/trash.svg') }}" alt="删除" width="16" height="16" />
                       </button>
                     </div>
                   </div>
@@ -560,13 +596,13 @@
                         class="action-btn favorite-btn"
                         data-image-id="example2"
                       >
-                        <i class="fa fa-heart-o"></i>
+                        <img src="{{ url_for('static', filename='icons/heart.svg') }}" alt="喜欢" width="16" height="16" />
                       </button>
                       <button
                         class="action-btn delete-btn"
                         data-image-id="example2"
                       >
-                        <i class="fa fa-trash-o"></i>
+                        <img src="{{ url_for('static', filename='icons/trash.svg') }}" alt="删除" width="16" height="16" />
                       </button>
                     </div>
                   </div>
