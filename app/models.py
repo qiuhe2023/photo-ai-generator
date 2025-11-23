@@ -186,3 +186,30 @@ class GenerationParameter(db.Model):
             'parameter_value': self.parameter_value,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+
+class Favorite(db.Model):
+    """图片喜欢状态模型"""
+    __tablename__ = 'favorite'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(db.String(255), nullable=False, index=True)  # 使用session_id标识用户/会话
+    generation_result_id = db.Column(db.Integer, db.ForeignKey('generation_result.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关系
+    generation_result = db.relationship('GenerationResult', backref=db.backref('favorites', lazy='dynamic'))
+    
+    # 确保每个会话对每个生成结果只能有一个喜欢记录
+    __table_args__ = (
+        db.UniqueConstraint('session_id', 'generation_result_id', name='_session_image_favorite_uc'),
+    )
+    
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'generation_result_id': self.generation_result_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }

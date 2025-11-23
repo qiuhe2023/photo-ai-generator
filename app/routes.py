@@ -5,7 +5,7 @@ import time
 import os
 import json
 from . import db
-from .models import Photo, Tag, ImageGenerationTask, GenerationResult, GenerationParameter
+from .models import Photo, Tag, ImageGenerationTask, GenerationResult, GenerationParameter, Favorite
 from .tos_client import tos_client
 from werkzeug.utils import secure_filename
 # 导入图生图功能
@@ -608,3 +608,162 @@ def generate_image():
         db.session.rollback()
         print(f"保存生成图片失败: {str(e)}")
         return jsonify({'error': f'保存图片时出错: {str(e)}'}), 500
+
+
+@bp.route('/api/favorites', methods=['POST'])
+def add_favorite():
+    """添加图片到喜欢列表"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'image_id' not in data:
+            return jsonify({'error': '缺少必要参数image_id'}), 400
+        
+        # 获取session_id，如果没有则从请求头获取或生成新的
+        session_id = request.cookies.get('session_id') or request.headers.get('X-Session-ID')
+        if not session_id:
+            # 在实际生产环境中，应该使用更安全的方式生成session_id
+            import uuid
+            session_id = str(uuid.uuid4())
+        
+        image_id = data['image_id']
+        
+        # 检查生成结果是否存在
+        generation_result = GenerationResult.query.get(image_id)
+        if not generation_result:
+            return jsonify({'error': '生成结果不存在'}), 404
+        
+        # 检查是否已经喜欢
+        existing_favorite = Favorite.query.filter_by(
+            session_id=session_id,
+            generation_result_id=image_id
+        ).first()
+        
+        if existing_favorite:
+            return jsonify({
+                'success': True,
+                'message': '图片已在喜欢列表中',
+                'is_favorited': True
+            })
+        
+        # 添加喜欢记录
+        favorite = Favorite(
+            session_id=session_id,
+            generation_result_id=image_id
+        )
+        db.session.add(favorite)
+        db.session.commit()
+        
+        # 创建响应
+        response = jsonify({
+            'success': True,
+            'message': '添加到喜欢列表成功',
+            'is_favorited': True,
+            'favorite_id': favorite.id
+        })
+        
+        # 设置session_id到cookie（如果之前没有的话）
+        if not request.cookies.get('session_id'):
+            response.set_cookie('session_id', session_id, max_age=30*24*60*60)  # 30天有效期
+        
+        return response
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"添加喜欢失败: {str(e)}")
+        return jsonify({'error': f'添加喜欢时出错: {str(e)}'}), 500
+
+
+@bp.route('/api/favorites/<int:image_id>', methods=['DELETE'])
+def remove_favorite(image_id):
+    """从喜欢列表中移除图片"""
+    try:
+        # 获取session_id
+        session_id = request.cookies.get('session_id') or request.headers.get('X-Session-ID')
+        if not session_id:
+            return jsonify({'error': '未找到用户会话信息'}), 400
+        
+        # 查找喜欢记录
+        favorite = Favorite.query.filter_by(
+            session_id=session_id,
+            generation_result_id=image_id
+        ).first()
+        
+        if not favorite:
+            return jsonify({
+                'success': True,
+                'message': '图片不在喜欢列表中',
+                'is_favorited': False
+            })
+        
+        # 删除喜欢记录
+        db.session.delete(favorite)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '从喜欢列表中移除成功',
+            'is_favorited': False
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"移除喜欢失败: {str(e)}")
+        return jsonify({'error': f'移除喜欢时出错: {str(e)}'}), 500
+
+
+@bp.route('/api/favorites', methods=['GET'])
+def get_favorites():
+    """获取用户喜欢的图片ID列表"""
+    try:
+        # 获取session_id
+        session_id = request.cookies.get('session_id') or request.headers.get('X-Session-ID')
+        
+        if not session_id:
+            # 如果没有session_id，返回空列表
+            return jsonify({
+                'success': True,
+                'favorited_image_ids': []
+            })
+        
+        # 查询喜欢的图片ID
+        favorites = Favorite.query.filter_by(session_id=session_id).all()
+        favorited_image_ids = [fav.generation_result_id for fav in favorites]
+        
+        return jsonify({
+            'success': True,
+            'favorited_image_ids': favorited_image_ids
+        })
+        
+    except Exception as e:
+        print(f"获取喜欢列表失败: {str(e)}")
+        return jsonify({'error': f'获取喜欢列表时出错: {str(e)}'}), 500
+
+
+@bp.route('/api/generated-images/<int:image_id>/favorite-status', methods=['GET'])
+def get_favorite_status(image_id):
+    """获取单张图片的喜欢状态"""
+    try:
+        # 获取session_id
+        session_id = request.cookies.get('session_id') or request.headers.get('X-Session-ID')
+        
+        if not session_id:
+            return jsonify({
+                'success': True,
+                'is_favorited': False
+            })
+        
+        # 检查是否喜欢
+        favorite = Favorite.query.filter_by(
+            session_id=session_id,
+            generation_result_id=image_id
+        ).first()
+        
+        return jsonify({
+            'success': True,
+            'is_favorited': favorite is not None
+        })
+        
+    except Exception as e:
+        print(f"获取喜欢状态失败: {str(e)}")
+        return jsonify({'error': f'获取喜欢状态时出错: {str(e)}'}), 500

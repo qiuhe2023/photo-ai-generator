@@ -722,21 +722,82 @@
           button.addEventListener("click", function () {
             const imageId = this.getAttribute("data-image-id");
             const isFavorited = this.classList.contains("favorited");
+            const buttonElement = this;
+
+            // 禁用按钮防止重复点击
+            buttonElement.disabled = true;
 
             if (isFavorited) {
               // 取消收藏
-              this.classList.remove("favorited");
-              this.innerHTML = '<i class="fa fa-heart-o"></i>';
-              console.log(`取消收藏图片: ${imageId}`);
-              // 实际应用中可以调用API取消收藏
+              axios
+                .delete(`/api/favorites/${imageId}`)
+                .then(function (response) {
+                  if (response.data.success) {
+                    buttonElement.classList.remove("favorited");
+                    buttonElement.innerHTML = '<i class="far fa-heart"></i>';
+                    console.log(`取消收藏图片成功: ${imageId}`);
+                  }
+                })
+                .catch(function (error) {
+                  console.error("取消收藏失败:", error);
+                  alert("取消收藏失败，请稍后重试");
+                })
+                .finally(function () {
+                  buttonElement.disabled = false;
+                });
             } else {
               // 添加收藏
-              this.classList.add("favorited");
-              this.innerHTML = '<i class="fa fa-heart"></i>';
-              console.log(`收藏图片: ${imageId}`);
-              // 实际应用中可以调用API添加收藏
+              axios
+                .post("/api/favorites", { image_id: parseInt(imageId) })
+                .then(function (response) {
+                  if (response.data.success) {
+                    buttonElement.classList.add("favorited");
+                    buttonElement.innerHTML = '<i class="fa fa-heart"></i>';
+                    console.log(`收藏图片成功: ${imageId}`);
+                  }
+                })
+                .catch(function (error) {
+                  console.error("收藏失败:", error);
+                  alert("收藏失败，请稍后重试");
+                })
+                .finally(function () {
+                  buttonElement.disabled = false;
+                });
             }
           });
+        });
+      }
+
+      // 加载用户喜欢的图片列表并设置UI
+      function loadUserFavorites() {
+        console.log("加载用户喜欢的图片...");
+        
+        axios
+          .get("/api/favorites")
+          .then(function (response) {
+            if (response.data.success) {
+              const favoritedImageIds = response.data.favorited_image_ids;
+              console.log("用户喜欢的图片ID列表:", favoritedImageIds);
+              
+              // 更新所有喜欢按钮的状态
+              document.querySelectorAll(".favorite-btn").forEach((button) => {
+                const imageId = button.getAttribute("data-image-id");
+                if (favoritedImageIds.includes(parseInt(imageId))) {
+                  button.classList.add("favorited");
+                  button.innerHTML = '<i class="fa fa-heart"></i>';
+                }
+              });
+            }
+          })
+                .catch(function (error) {
+                  console.error("加载喜欢列表失败:", error);
+                });
+      }
+
+      // 初始化图片项时设置默认图标
+      function initDefaultFavoriteIcons() {
+        document.querySelectorAll(".favorite-btn:not(.favorited)").forEach((button) => {
+          button.innerHTML = '<i class="far fa-heart"></i>';
         });
       }
 
@@ -796,8 +857,13 @@
       // 初始化收藏和删除按钮功能
       function initImageActions() {
         console.log("开始初始化图片操作按钮...");
+        // 先设置默认图标
+        initDefaultFavoriteIcons();
+        // 设置按钮事件
         setupFavoriteButtons();
         setupDeleteButtons();
+        // 加载用户喜欢状态
+        loadUserFavorites();
         console.log("图片操作按钮初始化完成");
       }
 
