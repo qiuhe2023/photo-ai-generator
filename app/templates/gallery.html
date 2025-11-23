@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图库页面 - 照片管理系统</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <style>
+      /* 导航栏样式 */
+      .navbar-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .navbar-tabs::-webkit-scrollbar {
+        height: 0;
+      }
+
+      .tab-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        margin: 0 0.25rem;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        text-decoration: none;
+      }
+
+      .tab-button:hover {
+        background-color: #f3f4f6;
+        color: #374151;
+      }
+
+      .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .tab-button.active:hover {
+        background-color: #2563eb;
+      }
+
+      /* 瀑布流样式 */
+      .masonry-container {
+        column-count: 4;
+        column-gap: 16px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .masonry-item {
+        break-inside: avoid;
+        margin-bottom: 16px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .masonry-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      }
+
+      .masonry-image {
+        width: 100%;
+        display: block;
+        transition: filter 0.2s ease;
+      }
+
+      .masonry-item:hover .ai-btn {
+        opacity: 1;
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .masonry-item:hover .masonry-image {
+        filter: brightness(0.95);
+      }
+
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 0;
+        color: #999;
+      }
+
+      .no-photos {
+        text-align: center;
+        padding: 60px 0;
+        color: #999;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 1200px) {
+        .masonry-container {
+          column-count: 3;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .navbar-tabs {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .tab-button {
+          padding: 0.6rem 1rem;
+          font-size: 0.9rem;
+        }
+
+        .masonry-container {
+          column-count: 2;
+          column-gap: 12px;
+        }
+
+        .masonry-item {
+          margin-bottom: 12px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .masonry-container {
+          column-count: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 导航栏 -->
+    <nav class="navbar bg-white shadow-sm border-b border-gray-200 mb-6">
+      <div class="container mx-auto px-4">
+        <div class="navbar-tabs flex space-x-1">
+          <a href="/" class="tab-button">
+            <i class="fa fa-upload mr-2"></i>上传
+          </a>
+          <a href="/search" class="tab-button">
+            <i class="fa fa-search mr-2"></i>搜索
+          </a>
+          <a href="/gallery" class="tab-button active">
+            <i class="fa fa-th-large mr-2"></i>图库
+          </a>
+          <a href="/ai_create" class="tab-button">
+            <i class="fa fa-magic mr-2"></i>AI二创
+          </a>
+          <a href="/creative" class="tab-button">
+            <i class="fa fa-paint-brush mr-2"></i>创意
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <h1 class="text-center mb-4">图库</h1>
+
+          <!-- 筛选和排序工具栏 -->
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-center mb-5"
+          >
+            <div class="d-flex flex-wrap gap-2 mb-2 mb-md-0">
+              <button id="filter-all" class="btn btn-primary btn-sm">
+                全部
+              </button>
+              <div id="tags-filter" class="d-flex flex-wrap gap-2"></div>
+            </div>
+            <div class="d-flex gap-2">
+              <select id="sort-select" class="form-control form-control-sm">
+                <option value="newest">最新上传</option>
+                <option value="oldest">最早上传</option>
+                <option value="most_viewed">最多浏览</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 瀑布流容器 -->
+          <div id="masonry-container" class="masonry-container">
+            <!-- 图片项将通过JavaScript动态添加 -->
+          </div>
+
+          <!-- 加载更多按钮 -->
+          <div class="text-center mt-5">
+            <button id="load-more" class="btn btn-outline-primary">
+              加载更多
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const masonryContainer = document.getElementById("masonry-container");
+        const loadMoreBtn = document.getElementById("load-more");
+        const sortSelect = document.getElementById("sort-select");
+        const filterAllBtn = document.getElementById("filter-all");
+        const tagsFilterContainer = document.getElementById("tags-filter");
+
+        let currentPage = 1;
+        let currentTag = null;
+        let currentSort = "newest";
+        let isLoading = false;
+        let hasMorePhotos = true;
+        const tagsMap = new Map(); // 用于存储已加载的标签
+        let allPhotos = []; // 全局存储所有图片数据
+
+        // 获取图片列表
+        async function fetchPhotos(
+          page = 1,
+          tag = null,
+          sort = "newest",
+          reset = false
+        ) {
+          if (isLoading || (!hasMorePhotos && !reset)) return;
+
+          isLoading = true;
+
+          // 显示加载状态
+          if (reset) {
+            masonryContainer.innerHTML = '<div class="loading">加载中...</div>';
+          } else {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = "加载中...";
+          }
+
+          try {
+            // 构建API请求URL
+            let url = `/api/photos?page=${page}`;
+
+            // 添加排序参数
+            let orderBy = "created_at";
+            let orderDir = "desc";
+
+            if (sort === "newest") {
+              orderBy = "created_at";
+              orderDir = "desc";
+            } else if (sort === "oldest") {
+              orderBy = "created_at";
+              orderDir = "asc";
+            } else if (sort === "most_viewed") {
+              orderBy = "views";
+              orderDir = "desc";
+            }
+
+            url += `&order_by=${orderBy}&order_dir=${orderDir}`;
+
+            // 添加标签筛选参数
+            if (tag) {
+              url += `&tag=${tag}`;
+            }
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+              throw new Error(`API请求失败: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // 更新图片和标签
+            renderPhotos(data.photos, reset);
+            updateTags(data.photos);
+
+            // 更新全局图片数组
+            if (reset) {
+              allPhotos = data.photos;
+            } else {
+              allPhotos = [...allPhotos, ...data.photos];
+            }
+
+            // 调试：打印第一张图片的数据结构，了解所有可用字段
+            if (data.photos.length > 0) {
+              console.log("图片数据结构示例:", Object.keys(data.photos[0]));
+              console.log("图片URL字段值:", {
+                url: data.photos[0].url,
+                thumbnail_url: data.photos[0].thumbnail_url,
+                original_url: data.photos[0].original_url, // 检查是否有original_url字段
+              });
+            }
+
+            // 更新分页状态
+            hasMorePhotos = data.pagination.has_next;
+
+            if (reset) {
+              currentPage = 1;
+            }
+
+            if (!hasMorePhotos) {
+              loadMoreBtn.style.display = "none";
+            } else {
+              loadMoreBtn.style.display = "inline-block";
+            }
+          } catch (error) {
+            console.error("获取图片失败:", error);
+            if (reset) {
+              masonryContainer.innerHTML =
+                '<div class="no-photos">加载失败，请刷新页面重试</div>';
+            }
+          } finally {
+            isLoading = false;
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = "加载更多";
+          }
+        }
+
+        // 渲染图片到瀑布流
+        function renderPhotos(photos, reset = false) {
+          // 如果没有图片且是重置状态，显示空状态
+          if (photos.length === 0 && reset) {
+            masonryContainer.innerHTML =
+              '<div class="no-photos">暂无图片</div>';
+            return;
+          }
+
+          // 如果是重置状态，先清空容器
+          if (reset) {
+            masonryContainer.innerHTML = "";
+          } else {
+            // 移除加载提示
+            const loadingElement = masonryContainer.querySelector(".loading");
+            if (loadingElement) {
+              loadingElement.remove();
+            }
+          }
+
+          // 创建文档片段以提高性能
+          const fragment = document.createDocumentFragment();
+
+          photos.forEach((photo) => {
+            const item = document.createElement("div");
+            item.className = "masonry-item";
+
+            // 优先使用原图URL，按优先级检查多个可能的原图字段
+            // 从数据库中获取的原图URL字段是tos_url，放在最前面优先使用
+            const imageUrl =
+              photo.tos_url ||
+              photo.original_url ||
+              photo.url_original ||
+              photo.url ||
+              photo.thumbnail_url;
+
+            // 使用更简单直接的方式创建元素，避免HTML字符串解析问题
+            const relativeContainer = document.createElement("div");
+            relativeContainer.style.position = "relative";
+            relativeContainer.style.display = "inline-block";
+
+            const img = document.createElement("img");
+            img.src = imageUrl;
+            img.alt = photo.title || "未命名";
+            img.className = "masonry-image";
+            img.loading = "lazy";
+
+            const aiButton = document.createElement("button");
+            aiButton.className = "ai-btn";
+            aiButton.dataset.id = photo.id;
+            aiButton.textContent = "AI";
+            // 设置按钮样式
+            aiButton.style.position = "absolute";
+            aiButton.style.bottom = "8px";
+            aiButton.style.right = "8px";
+            aiButton.style.backgroundColor = "rgba(37, 99, 235, 0.3)"; // 蓝色背景，30%不透明度
+            aiButton.style.color = "white";
+            aiButton.style.fontSize = "14px";
+            aiButton.style.padding = "4px 8px";
+            aiButton.style.borderRadius = "6px";
+            aiButton.style.border = "none";
+            aiButton.style.opacity = "0"; // 默认隐藏
+            aiButton.style.transition = "all 0.3s ease";
+            aiButton.style.cursor = "pointer";
+            aiButton.style.zIndex = "100";
+            aiButton.style.fontWeight = "bold";
+
+            // 添加鼠标悬停显示逻辑
+            relativeContainer.addEventListener("mouseenter", function () {
+              aiButton.style.opacity = "1";
+            });
+            relativeContainer.addEventListener("mouseleave", function () {
+              aiButton.style.opacity = "0";
+            });
+
+            // 添加按钮到容器
+            relativeContainer.appendChild(img);
+            relativeContainer.appendChild(aiButton);
+
+            // 添加容器到item
+            item.appendChild(relativeContainer);
+
+            // 移除innerHTML设置，直接使用DOM操作
+
+            // 为AI按钮添加点击事件
+            const aiBtn = item.querySelector(".ai-btn");
+            aiBtn.addEventListener("click", function (event) {
+              event.stopPropagation(); // 阻止事件冒泡
+              aiProcessPhoto(photo.id);
+            });
+
+            // 添加点击事件（可以根据需要跳转到详情页）
+            item.addEventListener("click", () => {
+              // 这里可以跳转到图片详情页，或者打开模态框显示大图
+              console.log("点击了图片:", photo.id);
+            });
+
+            fragment.appendChild(item);
+          });
+
+          // 一次性将所有图片添加到DOM
+          masonryContainer.appendChild(fragment);
+        }
+
+        // AI处理图片 - 修改为跳转到AI二创页面
+        function aiProcessPhoto(photoId) {
+          // 查找对应的图片信息
+          const photo = allPhotos.find((p) => p.id === photoId);
+          if (photo) {
+            // 使用图片URL（优先使用tos_url作为原图链接，与图片显示逻辑保持一致）
+            const imageUrl =
+              photo.tos_url ||
+              photo.original_url ||
+              photo.url_original ||
+              photo.url ||
+              photo.thumbnail_url;
+
+            // 获取图片尺寸信息（如果API返回了尺寸，否则我们会在AI二创页面获取）
+            const width = photo.width || 512;
+            const height = photo.height || 512;
+
+            // 构建目标URL，通过查询参数传递图片信息
+            const targetUrl = `/ai_create?image_url=${encodeURIComponent(
+              imageUrl
+            )}&width=${width}&height=${height}`;
+
+            // 跳转到AI二创页面
+            window.location.href = targetUrl;
+          }
+        }
+
+        // 更新标签筛选器
+        function updateTags(photos) {
+          // 提取所有标签
+          photos.forEach((photo) => {
+            if (photo.tags) {
+              photo.tags.forEach((tag) => {
+                if (!tagsMap.has(tag.id)) {
+                  tagsMap.set(tag.id, tag.name);
+
+                  // 创建标签筛选按钮
+                  const tagButton = document.createElement("button");
+                  tagButton.className = "btn btn-outline-secondary btn-sm";
+                  tagButton.dataset.tagId = tag.id;
+                  tagButton.textContent = tag.name;
+
+                  // 添加点击事件
+                  tagButton.addEventListener("click", function () {
+                    // 切换选中状态
+                    document
+                      .querySelectorAll("#tags-filter button")
+                      .forEach((btn) => {
+                        btn.classList.remove("active");
+                      });
+                    this.classList.toggle("active");
+
+                    // 更新当前筛选的标签
+                    currentTag = this.classList.contains("active")
+                      ? tag.id
+                      : null;
+
+                    // 重置并重新加载图片
+                    fetchPhotos(1, currentTag, currentSort, true);
+                  });
+
+                  tagsFilterContainer.appendChild(tagButton);
+                }
+              });
+            }
+          });
+        }
+
+        // 事件监听
+
+        // 加载更多按钮点击事件
+        loadMoreBtn.addEventListener("click", function () {
+          if (!isLoading && hasMorePhotos) {
+            currentPage++;
+            fetchPhotos(currentPage, currentTag, currentSort);
+          }
+        });
+
+        // 排序下拉框变化事件
+        sortSelect.addEventListener("change", function () {
+          currentSort = this.value;
+          fetchPhotos(1, currentTag, currentSort, true);
+        });
+
+        // 全部标签筛选按钮点击事件
+        filterAllBtn.addEventListener("click", function () {
+          // 移除所有标签按钮的选中状态
+          document.querySelectorAll("#tags-filter button").forEach((btn) => {
+            btn.classList.remove("active");
+          });
+
+          // 清除当前标签筛选
+          currentTag = null;
+
+          // 重置并重新加载图片
+          fetchPhotos(1, null, currentSort, true);
+        });
+
+        // 滚动加载更多（可选功能）
+        window.addEventListener("scroll", function () {
+          if (
+            window.innerHeight + window.scrollY >=
+              document.body.offsetHeight - 500 &&
+            !isLoading &&
+            hasMorePhotos
+          ) {
+            currentPage++;
+            fetchPhotos(currentPage, currentTag, currentSort);
+          }
+        });
+
+        // 初始化加载第一页图片
+        fetchPhotos(1, null, currentSort, true);
+      });
+    </script>
+  </body>
+</html>

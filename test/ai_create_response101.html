@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI二创页面 - 照片管理系统</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        margin-left: 5px;
+        cursor: help;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 200px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -100px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .loading-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid #0d6efd;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 生成图片容器样式 */
+      #result-images-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      /* 生成的单张图片样式 */
+      .generated-image-wrapper {
+        width: 100%;
+      }
+
+      /* 生成图片样式 */
+      .generated-image {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      /* 按钮容器样式 */
+      .image-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      /* 响应式布局调整 */
+      @media (max-width: 768px) {
+        .d-flex.justify-content-center.gap-4 {
+          flex-direction: column;
+        }
+
+        #original-image-container,
+        #generated-image-container {
+          max-width: 100% !important;
+        }
+      }
+      /* 导航栏样式 */
+      .navbar-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .navbar-tabs::-webkit-scrollbar {
+        height: 0;
+      }
+
+      .tab-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        margin: 0 0.25rem;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        text-decoration: none;
+      }
+
+      .tab-button:hover {
+        background-color: #f3f4f6;
+        color: #374151;
+      }
+
+      .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .tab-button.active:hover {
+        background-color: #2563eb;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .navbar-tabs {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .tab-button {
+          padding: 0.6rem 1rem;
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 导航栏 -->
+    <nav class="navbar bg-white shadow-sm border-b border-gray-200 mb-6">
+      <div class="container mx-auto px-4">
+        <div class="navbar-tabs flex space-x-1">
+          <a href="/" class="tab-button">
+            <i class="fa fa-upload mr-2"></i>上传
+          </a>
+          <a href="/search" class="tab-button">
+            <i class="fa fa-search mr-2"></i>搜索
+          </a>
+          <a href="/gallery" class="tab-button">
+            <i class="fa fa-th-large mr-2"></i>图库
+          </a>
+          <a href="/ai_create" class="tab-button active">
+            <i class="fa fa-magic mr-2"></i>AI二创
+          </a>
+          <a href="/creative" class="tab-button">
+            <i class="fa fa-paint-brush mr-2"></i>创意
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+          <h1 class="text-center mb-5">AI二创页</h1>
+
+          <div class="card p-5 shadow-sm mb-5">
+            <!-- 图片对比区域 -->
+            <div class="mb-4">
+              <h3 class="mb-3">图片对比</h3>
+              <div class="d-flex justify-content-center gap-4">
+                <!-- 原始图片显示区域 -->
+                <div
+                  id="original-image-container"
+                  class="text-center p-4 border border-gray-200 rounded-lg bg-gray-50 flex-1"
+                  style="min-height: 200px; max-width: 50%"
+                >
+                  <p class="text-sm text-gray-500 mb-2">原始图片</p>
+                  <p id="no-image-message">未检测到传入图片</p>
+                  <img
+                    id="original-image"
+                    src=""
+                    alt="原始图片"
+                    class="img-fluid rounded shadow-sm"
+                    style="max-height: 400px; display: none"
+                  />
+                  <button
+                    id="upload-image-btn"
+                    class="btn btn-outline-primary mt-3"
+                    style="display: none"
+                  >
+                    <i class="fa fa-upload mr-2"></i>上传新图片
+                  </button>
+                  <input
+                    type="file"
+                    id="image-upload-input"
+                    accept="image/*"
+                    style="display: none"
+                  />
+                </div>
+
+                <!-- 生成图片显示区域 -->
+                <div
+                  id="generated-image-container"
+                  class="text-center p-4 border border-gray-200 rounded-lg bg-gray-50 flex-1"
+                  style="min-height: 200px; max-width: 50%"
+                >
+                  <p class="text-sm text-gray-500 mb-2">生成结果</p>
+                  <p id="waiting-message">等待生成结果...</p>
+                  <div
+                    id="loading-spinner"
+                    class="loading-spinner"
+                    style="display: none"
+                  ></div>
+                  <div id="result-images-container" style="display: none">
+                    <!-- 生成的图片将显示在这里 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 提示词输入区域 -->
+            <div class="mb-4">
+              <label for="prompt" class="form-label fw-bold">提示词</label>
+              <textarea
+                id="prompt"
+                class="form-control"
+                rows="3"
+                placeholder="请输入图片修改提示词，例如：将图片转换为油画风格，添加更明亮的色彩"
+              ></textarea>
+              <div class="form-text text-muted mt-1">
+                详细的提示词将产生更好的效果
+              </div>
+
+              <label for="negative_prompt" class="form-label fw-bold mt-3"
+                >反向提示词</label
+              >
+              <textarea
+                id="negative_prompt"
+                class="form-control"
+                rows="2"
+                placeholder="描述你不想要在生成图片中出现的内容，例如：模糊、变形、低质量"
+              ></textarea>
+            </div>
+
+            <!-- 参数设置区域 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">生成参数</label>
+
+              <div class="row gap-3 mb-3">
+                <div class="col-md-6">
+                  <label for="model_select" class="form-label">选择模型</label>
+                  <select id="model_select" class="form-select">
+                    <option value="model1">通用模型 4.0</option>
+                    <option value="model2">艺术风格模型</option>
+                    <option value="model3">写实风格模型</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="count_select" class="form-label">生成数量</label>
+                  <select id="count_select" class="form-select">
+                    <option value="1">1张</option>
+                    <option value="2" selected>2张</option>
+                    <option value="3">3张</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row gap-3">
+                <div class="col-md-4">
+                  <label for="width" class="form-label">宽度</label>
+                  <input
+                    type="number"
+                    id="width"
+                    class="form-control"
+                    min="256"
+                    max="1024"
+                    value="512"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="height" class="form-label">高度</label>
+                  <input
+                    type="number"
+                    id="height"
+                    class="form-control"
+                    min="256"
+                    max="1024"
+                    value="512"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="steps" class="form-label">采样步数</label>
+                  <input
+                    type="range"
+                    id="steps"
+                    class="form-range"
+                    min="20"
+                    max="50"
+                    step="5"
+                    value="30"
+                  />
+                  <div id="steps-value" class="text-center">30</div>
+                </div>
+              </div>
+
+              <div class="row gap-3 mt-3">
+                <div class="col-md-12">
+                  <label for="strength" class="form-label"
+                    >创意强度
+                    <span class="tooltip">
+                      <i class="fa fa-question-circle text-primary"></i>
+                      <span class="tooltiptext"
+                        >控制原图与生成图的相似度，值越高创意性越强</span
+                      >
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    id="strength"
+                    class="form-range"
+                    min="0.1"
+                    max="0.9"
+                    step="0.1"
+                    value="0.6"
+                  />
+                  <div id="strength-value" class="text-center">0.6</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 按钮区域 -->
+            <div class="d-flex justify-content-center gap-3">
+              <button
+                id="generate-button"
+                class="btn btn-primary px-6 py-2 rounded-lg shadow-sm"
+                disabled
+              >
+                <i class="fa fa-magic mr-2"></i>生成图片
+              </button>
+              <button
+                id="reset-button"
+                class="btn btn-secondary px-6 py-2 rounded-lg shadow-sm"
+              >
+                <i class="fa fa-refresh mr-2"></i>重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 生成结果相关的UI元素已移至图片对比区域 -->
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      // 获取URL参数
+      function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+          image_url: params.get("image_url"),
+          width: params.get("width") ? parseInt(params.get("width")) : 512,
+          height: params.get("height") ? parseInt(params.get("height")) : 512,
+        };
+      }
+
+      // 初始化页面
+      function initPage() {
+        const params = getUrlParams();
+
+        // 如果有图片URL参数，显示原始图片
+        if (params.image_url) {
+          const imageUrl = decodeURIComponent(params.image_url);
+          const originalImage = document.getElementById("original-image");
+          originalImage.src = imageUrl;
+          originalImage.style.display = "block";
+          document.getElementById("no-image-message").style.display = "none";
+          document.getElementById("upload-image-btn").style.display = "block";
+
+          // 更新宽度和高度输入框
+          if (params.width) {
+            document.getElementById("width").value = params.width;
+          }
+          if (params.height) {
+            document.getElementById("height").value = params.height;
+          }
+
+          // 启用生成按钮
+          document.getElementById("generate-button").disabled = false;
+        } else {
+          // 如果没有图片URL参数，显示上传按钮
+          document.getElementById("upload-image-btn").style.display = "block";
+        }
+      }
+
+      // 创意强度滑块事件
+      document
+        .getElementById("strength")
+        .addEventListener("input", function (e) {
+          document.getElementById("strength-value").textContent =
+            e.target.value;
+        });
+
+      // 采样步数滑块事件
+      document.getElementById("steps").addEventListener("input", function (e) {
+        document.getElementById("steps-value").textContent = e.target.value;
+      });
+
+      // 上传图片按钮事件
+      document
+        .getElementById("upload-image-btn")
+        .addEventListener("click", function () {
+          document.getElementById("image-upload-input").click();
+        });
+
+      // 图片上传处理
+      document
+        .getElementById("image-upload-input")
+        .addEventListener("change", function (e) {
+          if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.type.match("image.*")) {
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                const originalImage = document.getElementById("original-image");
+                originalImage.src = e.target.result;
+                originalImage.style.display = "block";
+                document.getElementById("no-image-message").style.display =
+                  "none";
+                document.getElementById("generate-button").disabled = false;
+              };
+              reader.readAsDataURL(file);
+            } else {
+              alert("请上传有效的图片文件");
+            }
+          }
+        });
+
+      // 重置按钮事件
+      document
+        .getElementById("reset-button")
+        .addEventListener("click", function () {
+          document.getElementById("prompt").value = "";
+          document.getElementById("negative_prompt").value = "";
+          document.getElementById("strength").value = "0.6";
+          document.getElementById("strength-value").textContent = "0.6";
+          document.getElementById("steps").value = "30";
+          document.getElementById("steps-value").textContent = "30";
+          document.getElementById("result-images-container").style.display =
+            "none";
+          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("waiting-message").style.display = "block";
+        });
+
+      // 生成图片函数 - 调用即梦4.0 API
+      async function generateImage() {
+        const prompt = document.getElementById("prompt").value.trim();
+        const negativePrompt = document
+          .getElementById("negative_prompt")
+          .value.trim();
+        const strength = parseFloat(document.getElementById("strength").value);
+        const steps = parseInt(document.getElementById("steps").value);
+        const width = parseInt(document.getElementById("width").value);
+        const height = parseInt(document.getElementById("height").value);
+        const model = document.getElementById("model_select").value;
+        const count = parseInt(document.getElementById("count_select").value);
+        const originalImage = document.getElementById("original-image");
+
+        // 验证输入
+        if (!prompt) {
+          alert("请输入提示词");
+          document.getElementById("waiting-message").style.display = "block";
+          document.getElementById("loading-spinner").style.display = "none";
+          return;
+        }
+
+        try {
+          // 显示加载状态
+          document.getElementById("waiting-message").style.display = "none";
+          document.getElementById("loading-spinner").style.display = "block";
+          document.getElementById("result-images-container").style.display =
+            "none";
+
+          // 准备JSON数据对象
+          const data = {
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            strength: strength,
+            steps: steps,
+            width: width,
+            height: height,
+            model: model,
+            count: count,
+          };
+
+          // 如果是通过URL加载的图片
+          if (originalImage.src.startsWith("http")) {
+            try {
+              // 直接传递图片URL给后端，让后端处理跨域问题
+              data.image_url = originalImage.src;
+              console.log("使用图片URL:", originalImage.src);
+            } catch (error) {
+              console.error("处理图片URL时出错:", error);
+              alert("无法处理图片URL，请尝试上传图片");
+              document.getElementById("waiting-message").style.display =
+                "block";
+              document.getElementById("loading-spinner").style.display = "none";
+              return;
+            }
+          } else if (originalImage.src.startsWith("data:")) {
+            // 如果是base64格式（上传的图片）
+            try {
+              // 将base64图片直接包含在JSON中
+              data.image_base64 = originalImage.src.split(",")[1]; // 移除data:image/jpeg;base64,前缀
+              console.log("使用base64图片");
+            } catch (error) {
+              console.error("处理base64图片时出错:", error);
+              alert("无法处理上传的图片");
+              document.getElementById("waiting-message").style.display =
+                "block";
+              document.getElementById("loading-spinner").style.display = "none";
+              return;
+            }
+          }
+
+          // 调用后端API，发送JSON格式数据
+          const response = await axios.post("/api/image-to-image", data, {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          // 处理响应
+          if (response.data && response.data.results) {
+            const resultsContainer = document.getElementById(
+              "result-images-container"
+            );
+            resultsContainer.innerHTML = "";
+            resultsContainer.style.display = "block";
+
+            // 显示生成的每张图片
+            response.data.results.forEach((result, index) => {
+              const imageWrapper = document.createElement("div");
+              imageWrapper.className = "generated-image-wrapper";
+
+              if (response.data.results.length > 1) {
+                const imageLabel = document.createElement("p");
+                imageLabel.className = "text-sm text-gray-600 mb-1";
+                imageLabel.textContent = `结果 ${index + 1}`;
+                imageWrapper.appendChild(imageLabel);
+              }
+
+              const img = document.createElement("img");
+              img.src = result.image_url;
+              img.alt = `生成结果 ${index + 1}`;
+              img.className = "generated-image";
+
+              const actionsDiv = document.createElement("div");
+              actionsDiv.className = "image-actions";
+
+              const saveButton = document.createElement("button");
+              saveButton.className = "btn btn-primary";
+              saveButton.innerHTML = '<i class="fa fa-save"></i>';
+              saveButton.onclick = () => saveGeneratedImage(result.image_id);
+              saveButton.title = "保存到图库";
+
+              const downloadButton = document.createElement("button");
+              downloadButton.className = "btn btn-success";
+              downloadButton.innerHTML = '<i class="fa fa-download"></i>';
+              downloadButton.onclick = () => downloadImage(result.image_url);
+              downloadButton.title = "下载图片";
+
+              actionsDiv.appendChild(saveButton);
+              actionsDiv.appendChild(downloadButton);
+              imageWrapper.appendChild(img);
+              imageWrapper.appendChild(actionsDiv);
+              resultsContainer.appendChild(imageWrapper);
+            });
+          }
+
+          // 隐藏加载状态
+          document.getElementById("loading-spinner").style.display = "none";
+          console.log("图片生成成功");
+        } catch (error) {
+          console.error("API调用失败:", error);
+          alert(
+            `图片生成失败: ${
+              error.response?.data?.error || error.message || "请稍后重试"
+            }`
+          );
+          document.getElementById("waiting-message").style.display = "block";
+          document.getElementById("loading-spinner").style.display = "none";
+        }
+      }
+
+      // 保存生成的图片到用户图库
+      async function saveGeneratedImage(imageId) {
+        try {
+          const response = await axios.post("/api/save_image", {
+            image_id: imageId,
+          });
+
+          if (response.data.success) {
+            alert("图片已成功保存到您的图库");
+          } else {
+            alert("保存失败: " + (response.data.error || "未知错误"));
+          }
+        } catch (error) {
+          console.error("保存图片失败:", error);
+          alert("保存失败，请稍后重试");
+        }
+      }
+
+      // 下载图片
+      function downloadImage(imageUrl) {
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.download = `ai-generated-${Date.now()}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // 生成按钮点击事件
+      document
+        .getElementById("generate-button")
+        .addEventListener("click", function () {
+          // 显示加载状态
+          document.getElementById("waiting-message").style.display = "none";
+          document.getElementById("loading-spinner").style.display = "block";
+          document.getElementById("result-images-container").style.display =
+            "none";
+
+          // 调用生成图片函数
+          generateImage();
+        });
+
+      // 页面加载完成后初始化
+      window.addEventListener("load", initPage);
+    </script>
+  </body>
+</html>

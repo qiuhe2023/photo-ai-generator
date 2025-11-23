@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图片管理系统</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <script src="/static/tailwind-config.js"></script>
+    <style
+      type="text/tailwindcss"
+      src="/static/css/tailwind-utilities.css"
+    ></style>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <style>
+      /* 导航栏样式 */
+      .navbar-tabs {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .navbar-tabs::-webkit-scrollbar {
+        height: 0;
+      }
+      
+      .tab-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        margin: 0 0.25rem;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+      
+      /* 删除按钮样式 */
+      .photo-card .delete-btn {
+        opacity: 0;
+        transition: opacity 300ms ease-in-out;
+        z-index: 10;
+      }
+      
+      .photo-card:hover .delete-btn {
+        opacity: 1;
+      }
+      
+      .tab-button:hover {
+        background-color: #f3f4f6;
+        color: #374151;
+      }
+      
+      .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+      }
+      
+      .tab-button.active:hover {
+        background-color: #2563eb;
+      }
+      
+      .tab-content {
+        transition: all 0.3s ease;
+      }
+      
+      .tab-content.hidden {
+        display: none;
+      }
+      
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .navbar-tabs {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        .tab-button {
+          padding: 0.6rem 1rem;
+          font-size: 0.9rem;
+        }
+        
+        .tab-button i {
+          font-size: 0.8rem;
+        }
+      }
+      
+      /* 确保导航栏与侧边栏兼容 */
+      .main-content {
+        transition: margin-left 0.3s ease;
+      }
+      
+      /* 确保内容区域有足够的空间 */
+      .tab-contents {
+        width: 100%;
+      }
+      
+      /* 修复可能的垂直间距问题 */
+      .navbar + .tab-contents {
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3 class="sidebar-title">版本切换</h3>
+      </div>
+      <div class="version-dropdown">
+        <button id="versionDropdownButton" class="version-dropdown-button">
+          <span id="currentVersionText">当前版本：v2</span>
+          <i class="fa fa-chevron-down text-xs"></i>
+        </button>
+        <div id="versionDropdownMenu" class="version-dropdown-menu">
+          <div class="version-dropdown-item" data-version="v1">
+            v1（空白页）
+          </div>
+          <div class="version-dropdown-item active" data-version="v2">
+            v2（当前页面）
+          </div>
+          <!-- 搜索标签内容 -->
+          <div id="searchContent" class="tab-content hidden">
+            <div class="container mx-auto px-4 py-8 max-w-6xl">
+              <div class="bg-white p-8 rounded-xl shadow-sm text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">搜索功能</h2>
+                <p class="text-gray-600">搜索功能开发中...</p>
+              </div>
+            </div>
+          </div>
+          <!-- 图库标签内容 -->
+          <div id="galleryContent" class="tab-content hidden">
+            <div class="container mx-auto px-4 py-8 max-w-6xl">
+              <div class="bg-white p-8 rounded-xl shadow-sm text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">图库功能</h2>
+                <p class="text-gray-600">图库功能开发中...</p>
+              </div>
+            </div>
+          </div>
+          <!-- AI二创标签内容 -->
+          <div id="ai-createContent" class="tab-content hidden">
+            <div class="container mx-auto px-4 py-8 max-w-6xl">
+              <div class="bg-white p-8 rounded-xl shadow-sm text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">AI二创功能</h2>
+                <p class="text-gray-600">AI二创功能开发中...</p>
+              </div>
+            </div>
+          </div>
+          <!-- 创意标签内容 -->
+          <div id="creativeContent" class="tab-content hidden">
+            <div class="container mx-auto px-4 py-8 max-w-6xl">
+              <div class="bg-white p-8 rounded-xl shadow-sm text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">创意功能</h2>
+                <p class="text-gray-600">创意功能开发中...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- 主内容区域 -->
+    <div class="main-content">
+      <!-- v1 空白页 -->
+      <div id="v1Container" class="version-container">
+        <div class="v1-container">
+          <div class="text-center p-8 bg-white rounded-xl shadow-sm">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">v1 版本</h2>
+            <p class="text-gray-500">这是一个空白页面</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- v2 当前页面 -->
+      <div id="v2Container" class="version-container active">
+        <!-- 导航栏 -->
+        <nav class="navbar bg-white shadow-sm border-b border-gray-200 mb-6">
+          <div class="container mx-auto px-4">
+            <div class="navbar-tabs flex space-x-1">
+              <button class="tab-button active" data-tab="upload">
+                <i class="fa fa-upload mr-2"></i>上传
+              </button>
+              <a href="/search" class="tab-button">
+                <i class="fa fa-search mr-2"></i>搜索
+              </a>
+              <a href="/gallery" class="tab-button">
+                <i class="fa fa-th-large mr-2"></i>图库
+              </a>
+              <a href="/ai_create" class="tab-button">
+                <i class="fa fa-magic mr-2"></i>AI二创
+              </a>
+              <a href="/creative" class="tab-button">
+                <i class="fa fa-paint-brush mr-2"></i>创意
+              </a>
+            </div>
+          </div>
+        </nav>
+        
+        <!-- Tab内容区域 -->
+        <div class="tab-contents">
+          <!-- 上传标签内容 -->
+          <div id="uploadContent" class="tab-content active">
+            <div class="container mx-auto px-4 py-8 max-w-6xl">
+              <!-- 顶部导航 - 已移除logo和标题 -->
+
+          <!-- 上传区域 -->
+          <div
+            class="upload-area mb-8 rounded-2xl border-2 border-dashed border-gray-300 p-8 text-center bg-white shadow-sm cursor-pointer hover:border-primary transition-colors"
+            id="uploadArea"
+          >
+            <input
+              type="file"
+              id="fileInput"
+              multiple
+              accept="image/*"
+              style="display: none"
+            />
+            <div class="upload-icon mb-4 text-primary">
+              <i class="fa fa-cloud-upload text-6xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">上传图片</h3>
+            <p class="text-gray-500 mb-5">拖拽图片到此处或点击此处选择图片</p>
+            <p class="text-xs text-gray-400 mt-4">
+              支持 PNG、JPG、JPEG、GIF、WebP 格式，单个文件最大 100MB
+            </p>
+          </div>
+
+          <!-- 标签筛选 -->
+          <div class="mb-8 bg-white p-4 rounded-xl shadow-sm">
+            <div class="flex flex-wrap items-center gap-4">
+              <span class="font-medium text-gray-700">标签筛选:</span>
+              <div id="tagFilters" class="flex flex-wrap gap-2 flex-1"></div>
+              <div class="flex items-center gap-2 text-sm text-gray-500">
+                <span
+                  id="totalPhotos"
+                  class="px-3 py-1 bg-gray-100 rounded-full"
+                  >0 张图片</span
+                >
+                <span id="totalTags" class="px-3 py-1 bg-gray-100 rounded-full"
+                  >0 个标签</span
+                >
+              </div>
+              <button
+                id="clearFilterBtn"
+                class="btn-secondary btn-sm hidden"
+                onclick="clearFilter()"
+              >
+                <i class="fa fa-times-circle mr-1"></i> 清除筛选
+              </button>
+            </div>
+          </div>
+
+          <!-- 图片网格 -->
+          <div
+            id="photoGrid"
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          ></div>
+
+          <!-- 分页 -->
+          <nav class="mt-10" id="paginationContainer">
+            <ul
+              id="pagination"
+              class="pagination justify-content-center gap-1"
+            ></ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图片详情模态框 -->
+    <div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl rounded-xl overflow-hidden">
+        <div class="modal-content border-none shadow-2xl">
+          <div class="modal-header bg-gray-50 border-b">
+            <h5 class="modal-title text-xl font-semibold" id="photoTitle"></h5>
+            <button
+              type="button"
+              class="btn-close text-gray-500 hover:text-gray-700"
+              data-bs-dismiss="modal"
+              aria-label="关闭"
+            ></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="flex flex-col lg:flex-row">
+              <!-- 图片预览区域 -->
+              <div
+                class="lg:w-2/3 bg-black p-4 flex items-center justify-center"
+              >
+                <div class="relative">
+                  <img
+                    id="photoImage"
+                    class="max-w-full max-h-[60vh] object-contain rounded"
+                    alt="图片预览"
+                  />
+                  <div
+                    class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
+                  >
+                    <span id="photoViewCountBadge">0 次浏览</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 图片信息区域 -->
+              <div class="lg:w-1/3 p-6 overflow-y-auto max-h-[60vh]">
+                <!-- 图片信息 -->
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >图片信息</label
+                  >
+                  <div
+                    class="space-y-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg"
+                  >
+                    <p>
+                      <span class="font-medium">文件名:</span>
+                      <span id="photoFilename" class="truncate block"></span>
+                    </p>
+                    <p>
+                      <span class="font-medium">尺寸:</span>
+                      <span id="photoSize"></span>
+                    </p>
+                    <p>
+                      <span class="font-medium">大小:</span>
+                      <span id="photoFileSize"></span>
+                    </p>
+                    <p>
+                      <span class="font-medium">上传时间:</span>
+                      <span id="photoCreatedAt"></span>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- 描述 -->
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >描述</label
+                  >
+                  <textarea
+                    id="photoDescription"
+                    class="w-full input-primary bg-gray-50 h-20 resize-none mb-2"
+                    disabled
+                  ></textarea>
+                  <div class="flex justify-end">
+                    <button
+                      id="editDescriptionBtn"
+                      class="btn-secondary text-sm px-3 py-1 flex items-center justify-center gap-1 whitespace-nowrap"
+                    >
+                      <i class="fa fa-pencil"></i>
+                      <span>编辑描述</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 标签 -->
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >标签</label
+                  >
+                  <!-- 可用标签选择区域 -->
+                  <div class="mb-3">
+                    <label class="text-gray-700 text-sm font-medium block mb-1">可用标签（点击添加）</label>
+                    <div id="availableTags" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2"></div>
+                  </div>
+                  
+                  <!-- 添加新标签 -->
+                  <div class="flex mb-3">
+                    <input
+                      type="text"
+                      id="newTags"
+                      class="input-primary flex-1"
+                      placeholder="输入新标签，用逗号分隔"
+                    />
+                    <button class="btn-primary ml-2 px-3" onclick="addTags()">
+                      <i class="fa fa-plus"></i>
+                    </button>
+                  </div>
+                  <small class="text-gray-500 d-block mb-3"
+                    >按回车或点击添加按钮确认</small
+                  >
+                  
+                  <!-- 已有标签显示区域 -->
+                  <div
+                    id="photoTags"
+                    class="flex flex-wrap gap-2 min-h-[32px]"
+                  ></div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex gap-3 mt-8">
+                  <!-- 删除按钮已移至首页 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div
+      id="message"
+      class="message fixed top-4 right-4 z-50 max-w-xs rounded-xl shadow-xl overflow-hidden"
+    ></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      let currentPage = 1;
+      let currentTagId = null;
+      let currentPhotoId = null;
+      let isLoading = false;
+
+      // 显示消息提示
+      function showMessage(content, type = "success") {
+        const message = document.getElementById("message");
+
+        // 根据类型设置样式
+        const typeClasses = {
+          success: "bg-success text-white",
+          danger: "bg-danger text-white",
+          warning: "bg-warning text-white",
+          info: "bg-info text-white",
+        };
+
+        // 根据类型设置图标
+        const typeIcons = {
+          success: "fa-check-circle",
+          danger: "fa-exclamation-circle",
+          warning: "fa-exclamation-triangle",
+          info: "fa-info-circle",
+        };
+
+        message.className = `message ${typeClasses[type]} p-4 rounded-xl shadow-xl flex items-center gap-3 max-w-xs`;
+        message.innerHTML = `
+                <i class="fa ${typeIcons[type]} text-xl"></i>
+                <div class="flex-1">
+                    <p class="font-medium">${content}</p>
+                </div>
+                <button type="button" class="text-white/80 hover:text-white focus:outline-none" onclick="this.parentElement.style.display='none'">
+                    <i class="fa fa-times"></i>
+                </button>
+            `;
+        message.style.display = "flex";
+
+        // 自动隐藏
+        setTimeout(() => {
+          message.style.display = "none";
+        }, 3000);
+      }
+
+      // 显示加载状态
+      function showLoading(element) {
+        const originalContent = element.innerHTML;
+        element.dataset.originalContent = originalContent;
+
+        // 为图片网格显示骨架屏
+        if (element.id === "photoGrid") {
+          element.innerHTML = `
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                    <div class="shimmer rounded-xl aspect-square"></div>
+                `;
+        } else {
+          element.innerHTML = `
+                    <div class="d-flex justify-content-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                    </div>
+                `;
+        }
+        element.disabled = true;
+        return originalContent;
+      }
+
+      // 隐藏加载状态
+      function hideLoading(element) {
+        if (element) {
+          element.innerHTML = element.dataset.originalContent;
+          element.disabled = false;
+        }
+      }
+
+      // 页面加载完成后初始化
+      document.addEventListener("DOMContentLoaded", function () {
+        setupVersionSwitcher();
+        loadPhotos();
+        loadTags();
+        setupUpload();
+
+        // 监听标签输入框回车事件
+        document
+          .getElementById("newTags")
+          .addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addTags();
+            }
+          });
+      });
+
+      // 版本切换功能
+      function setupVersionSwitcher() {
+        const versionDropdownButton = document.getElementById(
+          "versionDropdownButton"
+        );
+        const versionDropdownMenu = document.getElementById(
+          "versionDropdownMenu"
+        );
+        const currentVersionText =
+          document.getElementById("currentVersionText");
+        const versionItems = document.querySelectorAll(
+          ".version-dropdown-item"
+        );
+        const versionContainers =
+          document.querySelectorAll(".version-container");
+
+        // 切换下拉菜单显示/隐藏
+        versionDropdownButton.addEventListener("click", function () {
+          versionDropdownMenu.classList.toggle("show");
+        });
+
+        // 点击其他区域关闭下拉菜单
+        document.addEventListener("click", function (event) {
+          if (!event.target.closest(".version-dropdown")) {
+            versionDropdownMenu.classList.remove("show");
+          }
+        });
+
+        // 版本选择
+        versionItems.forEach((item) => {
+          item.addEventListener("click", function () {
+            const version = this.getAttribute("data-version");
+
+            // 如果选择v1版本，跳转到v1.html
+            if (version === "v1") {
+              window.location.href = "/v1";
+              return;
+            }
+
+            // 更新活动状态
+            versionItems.forEach((i) => i.classList.remove("active"));
+            this.classList.add("active");
+
+            // 更新显示文本
+            currentVersionText.textContent = `当前版本：${version}`;
+
+            // 切换版本容器显示
+            versionContainers.forEach((container) => {
+              container.classList.remove("active");
+            });
+            document
+              .getElementById(`${version}Container`)
+              .classList.add("active");
+
+            // 关闭下拉菜单
+            versionDropdownMenu.classList.remove("show");
+          });
+        });
+      }
+
+      // 设置上传区域
+      function setupUpload() {
+        const uploadArea = document.getElementById("uploadArea");
+        const fileInput = document.getElementById("fileInput");
+        const uploadButton = uploadArea.querySelector("button");
+
+        // 拖拽事件
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+          uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+          uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+          uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+          uploadArea.classList.add("dragover");
+        }
+
+        function unhighlight() {
+          uploadArea.classList.remove("dragover");
+        }
+
+        // 处理文件拖放
+        uploadArea.addEventListener("drop", handleDrop, false);
+
+        function handleDrop(e) {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          handleFiles(files);
+        }
+
+        // 处理文件选择
+        fileInput.addEventListener("change", function () {
+          handleFiles(this.files);
+        });
+
+        // 添加点击上传区域事件
+        uploadArea.addEventListener("click", function () {
+          fileInput.click();
+        });
+      }
+
+      // AI处理图片
+      function aiProcessPhoto(photoId) {
+        showMessage(`AI处理图片 ${photoId}`, "info");
+        // 这里可以添加AI处理的具体逻辑
+      }
+
+      // 处理文件上传
+      function handleFiles(files) {
+        if (files.length === 0) return;
+
+        // 显示上传文件数量
+        console.log(`准备上传 ${files.length} 个文件`);
+
+        const uploadArea = document.getElementById("uploadArea");
+        const uploadBtn = document.querySelector("#uploadArea button");
+        const originalContent = showLoading(uploadArea);
+
+        const formData = new FormData();
+        // 确保所有文件都被添加到FormData中
+        for (let i = 0; i < files.length; i++) {
+          formData.append("files", files[i]);
+          console.log(`已添加文件: ${files[i].name}`);
+        }
+
+        axios
+          .post("/api/upload", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((response) => {
+            hideLoading(uploadArea);
+
+            if (response.data.success) {
+              showMessage(`成功上传 ${response.data.count} 张图片`);
+              loadPhotos(); // 重新加载图片列表
+            } else {
+              showMessage("上传失败", "danger");
+            }
+
+            // 显示错误信息
+            if (response.data.errors && response.data.errors.length > 0) {
+              response.data.errors.forEach((error) => {
+                showMessage(error, "warning");
+              });
+            }
+          })
+          .catch((error) => {
+            hideLoading(uploadArea);
+            showMessage(
+              "上传失败: " + (error.response?.data?.error || "网络错误"),
+              "danger"
+            );
+          })
+          .finally(() => {
+            // 确保在任何情况下都隐藏加载状态
+            if (uploadArea.disabled) {
+              hideLoading(uploadArea);
+            }
+          });
+      }
+
+      // 加载图片列表
+      function loadPhotos(page = 1) {
+        if (isLoading) return;
+        isLoading = true;
+
+        const photoGrid = document.getElementById("photoGrid");
+        const originalContent = showLoading(photoGrid);
+
+        currentPage = page;
+        let url = `/api/photos?page=${page}`;
+        if (currentTagId) {
+          url += `&tag_id=${currentTagId}`;
+        }
+
+        axios
+          .get(url)
+          .then((response) => {
+            hideLoading(photoGrid);
+            isLoading = false;
+
+            const photos = response.data.photos;
+            const pagination = response.data.pagination;
+
+            // 清空网格
+            photoGrid.innerHTML = "";
+
+            // 更新总数显示
+            document.getElementById("totalPhotos").textContent = `共 ${
+              response.data.pagination?.total || 0
+            } 张图片`;
+
+            // 添加图片卡片
+            photos.forEach((photo) => {
+              const card = document.createElement("div");
+              card.className =
+                "photo-card group bg-white rounded-xl overflow-hidden shadow-md card-hover";
+              card.setAttribute("data-photo-id", photo.id);
+              card.innerHTML = `
+                            <div class="relative overflow-hidden aspect-square">
+                                <img src="${
+                                  photo.thumbnail_url || photo.tos_url
+                                }" 
+                                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                     alt="${photo.title}">
+                                <button 
+                                  class="absolute top-2 right-2 bg-black/30 text-white px-1 rounded-md delete-btn"
+                                  onclick="event.stopPropagation(); deletePhotoFromGrid(${photo.id})"
+                                  title="删除图片"
+                                >
+                                  <i class="fa fa-trash"></i>
+                                </button>
+                                <button 
+                                  class="absolute bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 ai-btn"
+                                  onclick="event.stopPropagation(); aiProcessPhoto(${photo.id})"
+                                  title="AI处理"
+                                >
+                                  ai
+                                </button>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                                    <div class="p-3 w-full">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-white text-xs bg-black/50 px-2 py-1 rounded">
+                                                <i class="fa fa-eye mr-1"></i>${
+                                                  photo.view_count
+                                                }
+                                            </span>
+                                            <span class="text-white text-xs bg-black/50 px-2 py-1 rounded">
+                                                ${formatFileSize(
+                                                  photo.file_size
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h5 class="card-title font-medium text-gray-800 line-clamp-1 mb-2">${
+                                  photo.title
+                                }</h5>
+                                <div class="flex flex-wrap gap-1 mb-3">
+                                    ${photo.tags
+                                      .map(
+                                        (tag) =>
+                                          `<span class="tag-badge" style="background-color: ${tag.color}" data-tag-id="${tag.id}">${tag.name}</span>`
+                                      )
+                                      .join("")}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ${new Date(
+                                      photo.created_at
+                                    ).toLocaleDateString()}
+                                </div>
+                            </div>
+                        `;
+
+              // 点击卡片查看详情
+              card.addEventListener("click", function () {
+                showPhotoDetails(photo.id);
+              });
+
+              photoGrid.appendChild(card);
+            });
+
+            // 添加空状态
+            if (photos.length === 0) {
+              photoGrid.innerHTML = `
+                            <div class="col-12 text-center py-20">
+                                <div class="w-20 h-20 mx-auto mb-6 text-gray-300">
+                                    <i class="fa fa-picture-o text-6xl"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-700 mb-2">暂无图片</h3>
+                                <p class="text-gray-500 mb-6">上传您的第一张图片开始使用</p>
+                                <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fa fa-upload mr-2"></i>上传图片
+                                </button>
+                            </div>
+                        `;
+            }
+
+            // 更新分页
+            updatePagination(pagination);
+
+            // 绑定标签点击事件
+            document.querySelectorAll(".tag-badge").forEach((badge) => {
+              badge.addEventListener("click", function (e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                filterByTag(this.dataset.tagId);
+              });
+            });
+          })
+          .catch((error) => {
+            hideLoading(photoGrid);
+            isLoading = false;
+            showMessage("加载图片失败", "danger");
+            console.error("加载图片失败:", error);
+          });
+      }
+
+      // 更新分页
+      function updatePagination(pagination) {
+        const paginationEl = document.getElementById("pagination");
+        paginationEl.innerHTML = "";
+
+        // 上一页
+        if (pagination.has_prev) {
+          const prevLi = document.createElement("li");
+          prevLi.className = "page-item";
+          prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadPhotos(${
+            pagination.page - 1
+          })">&laquo;</a>`;
+          paginationEl.appendChild(prevLi);
+        } else {
+          const prevLi = document.createElement("li");
+          prevLi.className = "page-item disabled";
+          prevLi.innerHTML = '<span class="page-link">&laquo;</span>';
+          paginationEl.appendChild(prevLi);
+        }
+
+        // 页码
+        const maxVisible = 5;
+        let start = Math.max(1, pagination.page - Math.floor(maxVisible / 2));
+        let end = Math.min(pagination.pages, start + maxVisible - 1);
+        start = Math.max(1, end - maxVisible + 1);
+
+        for (let i = start; i <= end; i++) {
+          const li = document.createElement("li");
+          li.className = `page-item ${i === pagination.page ? "active" : ""}`;
+          li.innerHTML = `<a class="page-link" href="#" onclick="loadPhotos(${i})"><span>${i}</span></a>`;
+          paginationEl.appendChild(li);
+        }
+
+        // 下一页
+        if (pagination.has_next) {
+          const nextLi = document.createElement("li");
+          nextLi.className = "page-item";
+          nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadPhotos(${
+            pagination.page + 1
+          })">&raquo;</a>`;
+          paginationEl.appendChild(nextLi);
+        } else {
+          const nextLi = document.createElement("li");
+          nextLi.className = "page-item disabled";
+          nextLi.innerHTML = '<span class="page-link">&raquo;</span>';
+          paginationEl.appendChild(nextLi);
+        }
+      }
+
+      // 加载标签
+      function loadTags() {
+        axios
+          .get("/api/tags")
+          .then((response) => {
+            const tags = response.data;
+            const tagFilters = document.getElementById("tagFilters");
+
+            // 更新标签总数
+            document.getElementById(
+              "totalTags"
+            ).textContent = `共 ${tags.length} 个标签`;
+
+            // 填充标签
+            tags.forEach((tag) => {
+              const badge = document.createElement("span");
+              badge.className = "tag-badge";
+              badge.style.backgroundColor = tag.color;
+              badge.dataset.tagId = tag.id;
+              badge.innerHTML = `${tag.name} <span class="ml-1 opacity-80">${tag.usage_count}</span>`;
+              badge.title = `点击筛选标签: ${tag.name}`;
+
+              badge.addEventListener("click", function () {
+                filterByTag(this.dataset.tagId);
+              });
+
+              tagFilters.appendChild(badge);
+            });
+
+            // 添加空状态
+            if (tags.length === 0) {
+              tagFilters.innerHTML =
+                '<span class="text-gray-500">暂无标签</span>';
+            }
+          })
+          .catch((error) => {
+            console.error("加载标签失败:", error);
+          });
+      }
+
+      // 按标签筛选
+      function filterByTag(tagId) {
+        currentTagId = tagId;
+
+        // 更新标签样式
+        document.querySelectorAll(".tag-badge").forEach((badge) => {
+          if (badge.dataset.tagId === tagId) {
+            badge.classList.add("active");
+            // 添加选中动画
+            badge.style.transform = "scale(1.1)";
+            setTimeout(() => {
+              badge.style.transform = "";
+            }, 300);
+          } else {
+            badge.classList.remove("active");
+          }
+        });
+
+        // 显示清除筛选按钮
+        document.getElementById("clearFilterBtn").classList.remove("hidden");
+
+        loadPhotos(1); // 重新加载第一页
+      }
+
+      // 清除筛选
+      function clearFilter() {
+        currentTagId = null;
+
+        // 移除所有标签的活动状态
+        document.querySelectorAll(".tag-badge").forEach((badge) => {
+          badge.classList.remove("active");
+        });
+
+        // 隐藏清除筛选按钮
+        document.getElementById("clearFilterBtn").classList.add("hidden");
+
+        loadPhotos(1);
+
+        // 添加按钮动画
+        const btn = document.getElementById("clearFilterBtn");
+        btn.style.transform = "scale(0.95)";
+        setTimeout(() => {
+          btn.style.transform = "";
+        }, 300);
+      }
+
+      // 显示图片详情
+      function showPhotoDetails(photoId) {
+        console.log(`开始加载图片详情，ID: ${photoId}`);
+        currentPhotoId = photoId;
+
+        try {
+          // 预检查DOM元素是否存在
+          const requiredElements = [
+            "photoTitle",
+            "photoDescription",
+            "photoImage",
+            "photoFilename",
+            "photoSize",
+            "photoFileSize",
+            "photoCreatedAt",
+            "photoViewCount",
+            "photoViewCountBadge",
+            "editDescriptionBtn",
+            "photoTags",
+            "newTags",
+            "photoModal",
+          ];
+
+          for (const id of requiredElements) {
+            if (!document.getElementById(id)) {
+              console.error(`DOM元素不存在: ${id}`);
+            }
+          }
+
+          axios
+            .get(`/api/photos/${photoId}`)
+            .then((response) => {
+              console.log("API响应状态码:", response.status);
+              console.log("API响应数据类型:", typeof response.data);
+              console.log("API响应数据结构:", response.data);
+
+              // 确保响应数据是对象
+              if (!response.data || typeof response.data !== "object") {
+                throw new Error("无效的API响应格式");
+              }
+
+              // 直接使用response.data作为photo对象
+              const photo = response.data;
+
+              try {
+                // 填充模态框 - 添加安全检查
+                const titleElement = document.getElementById("photoTitle");
+                if (titleElement) {
+                  titleElement.textContent = photo.title || "未命名图片";
+                }
+
+                const descElement = document.getElementById("photoDescription");
+                if (descElement) {
+                  descElement.value = photo.description || "";
+                }
+
+                // 设置图片并添加错误处理
+                const photoImage = document.getElementById("photoImage");
+                if (photoImage) {
+                  photoImage.src = photo.tos_url || "";
+                  photoImage.alt = photo.title || "未命名图片";
+
+                  // 添加图片加载错误处理
+                  photoImage.onerror = function () {
+                    console.log("图片加载失败，尝试备选方案");
+                    // 如果原图加载失败，尝试使用缩略图
+                    if (
+                      photo.thumbnail_url &&
+                      photo.thumbnail_url !== photo.tos_url
+                    ) {
+                      photoImage.src = photo.thumbnail_url;
+                      // 如果缩略图也加载失败，显示占位图
+                      photoImage.onerror = function () {
+                        photoImage.src = "/static/placeholder.svg";
+                        photoImage.classList.add("img-error");
+                      };
+                    } else {
+                      // 直接显示占位图
+                      photoImage.src = "/static/placeholder.svg";
+                      photoImage.classList.add("img-error");
+                    }
+                  };
+                }
+
+                const filenameElement =
+                  document.getElementById("photoFilename");
+                if (filenameElement) {
+                  filenameElement.textContent =
+                    photo.original_filename || "未知文件名";
+                }
+
+                const sizeElement = document.getElementById("photoSize");
+                if (sizeElement) {
+                  sizeElement.textContent = `${photo.width || 0} × ${
+                    photo.height || 0
+                  }`;
+                }
+
+                const fileSizeElement =
+                  document.getElementById("photoFileSize");
+                if (fileSizeElement) {
+                  fileSizeElement.textContent = formatFileSize(
+                    photo.file_size || 0
+                  );
+                }
+
+                const createdAtElement =
+                  document.getElementById("photoCreatedAt");
+                if (createdAtElement && photo.created_at) {
+                  try {
+                    createdAtElement.textContent = new Date(
+                      photo.created_at
+                    ).toLocaleString();
+                  } catch (dateError) {
+                    console.error("日期格式化错误:", dateError);
+                    createdAtElement.textContent = "无效日期";
+                  }
+                }
+
+                const viewCountElement =
+                  document.getElementById("photoViewCount");
+                if (viewCountElement) {
+                  viewCountElement.textContent = photo.view_count || 0;
+                }
+
+                const viewCountBadgeElement = document.getElementById(
+                  "photoViewCountBadge"
+                );
+                if (viewCountBadgeElement) {
+                  viewCountBadgeElement.textContent = `${
+                    photo.view_count || 0
+                  } 次浏览`;
+                }
+
+                // 初始化编辑描述功能
+                const editBtn = document.getElementById("editDescriptionBtn");
+                const descriptionTextarea =
+                  document.getElementById("photoDescription");
+
+                if (editBtn && descriptionTextarea) {
+                  // 重置编辑状态
+                  descriptionTextarea.disabled = true;
+                  descriptionTextarea.classList.add("bg-gray-50");
+                  editBtn.innerHTML =
+                    '<i class="fa fa-pencil"></i><span>编辑描述</span>';
+                  editBtn.classList.remove("btn-primary");
+                  editBtn.classList.add("btn-secondary");
+
+                  editBtn.onclick = function () {
+                    if (descriptionTextarea.disabled) {
+                      // 进入编辑模式
+                      descriptionTextarea.disabled = false;
+                      descriptionTextarea.classList.remove("bg-gray-50");
+                      descriptionTextarea.focus();
+                      editBtn.innerHTML =
+                        '<i class="fa fa-check"></i><span>保存</span>';
+                      editBtn.classList.remove("btn-secondary");
+                      editBtn.classList.add("btn-primary");
+                    } else {
+                      // 保存描述
+                      descriptionTextarea.disabled = true;
+                      descriptionTextarea.classList.add("bg-gray-50");
+                      editBtn.innerHTML =
+                        '<i class="fa fa-pencil"></i><span>编辑描述</span>';
+                      editBtn.classList.remove("btn-primary");
+                      editBtn.classList.add("btn-secondary");
+
+                      // 调用API保存描述
+                      axios
+                        .put(`/api/photos/${currentPhotoId}`, {
+                          description: descriptionTextarea.value,
+                        })
+                        .then(() => {
+                          showMessage("描述保存成功");
+                        })
+                        .catch((error) => {
+                          console.error("保存描述失败:", error);
+                          showMessage("保存失败", "danger");
+                        });
+                    }
+                  };
+                }
+
+                // 填充标签 - 增强安全检查
+                const photoTags = document.getElementById("photoTags");
+                if (photoTags) {
+                  photoTags.innerHTML = "";
+                  // 确保tags存在且为数组
+                  if (photo.tags && Array.isArray(photo.tags)) {
+                    console.log(`处理标签数量: ${photo.tags.length}`);
+                    photo.tags.forEach((tag) => {
+                      // 确保tag对象包含必要属性
+                      if (
+                        tag &&
+                        typeof tag === "object" &&
+                        tag.id !== undefined &&
+                        tag.name
+                      ) {
+                        const badge = document.createElement("span");
+                        badge.className = "tag-badge badge";
+                        badge.style.backgroundColor = tag.color || "#007bff";
+                        badge.dataset.tagId = tag.id;
+                        badge.innerHTML = `${tag.name} <i class="fa fa-times ml-1 opacity-70"></i>`;
+
+                        // 添加删除标签事件
+                      badge.addEventListener("click", function () {
+                        if (confirm(`确定要移除标签 "${tag.name}" 吗？`)) {
+                          // 保存当前模态框实例引用
+                          const modalElement = document.getElementById("photoModal");
+                          const modalInstance = modalElement ? bootstrap.Modal.getInstance(modalElement) : null;
+                          
+                          axios
+                            .delete(
+                              `/api/photos/${currentPhotoId}/tags/${tag.id}`
+                            )
+                            .then(() => {
+                              showMessage("标签移除成功");
+                              // 不重新加载整个图片详情，只更新标签显示
+                              // 找到并移除被点击的标签元素
+                              badge.remove();
+                              // 重新加载可用标签列表
+                              loadAvailableTags();
+                            })
+                            .catch((error) => {
+                              console.error("移除标签失败:", error);
+                              showMessage("移除标签失败", "danger");
+                            });
+                        }
+                      });
+
+                        photoTags.appendChild(badge);
+                      }
+                    });
+                  } else {
+                    console.log("标签数据不存在或不是数组:", photo.tags);
+                  }
+                }
+
+                // 清空新标签输入框
+                const newTagsInput = document.getElementById("newTags");
+                if (newTagsInput) {
+                  newTagsInput.value = "";
+                }
+
+                // 显示模态框
+                const modalElement = document.getElementById("photoModal");
+                if (modalElement && window.bootstrap) {
+                  // 确保先销毁任何已存在的模态框实例
+                  const existingModal = bootstrap.Modal.getInstance(modalElement);
+                  if (existingModal) {
+                    existingModal.dispose();
+                  }
+                  
+                  const modal = new bootstrap.Modal(modalElement);
+                  modal.show();
+                  console.log("图片详情模态框已显示");
+                  
+                  // 模态框显示后加载可用标签列表
+                  setTimeout(() => {
+                    loadAvailableTags();
+                  }, 100);
+                } else {
+                  console.error("模态框元素不存在或bootstrap未加载");
+                  // 即使模态框显示失败，也显示成功消息，避免用户困惑
+                  showMessage("图片详情加载成功，但无法显示模态框");
+                }
+              } catch (domError) {
+                console.error("DOM操作错误:", domError);
+                showMessage("图片详情加载过程中发生错误", "danger");
+              }
+            })
+            .catch((error) => {
+              console.error("API请求失败:", error);
+              console.error("错误详情:", {
+                response: error.response
+                  ? {
+                      status: error.response.status,
+                      data: error.response.data,
+                    }
+                  : null,
+                request: error.request ? "请求已发送但无响应" : null,
+                message: error.message,
+                config: error.config
+                  ? {
+                      url: error.config.url,
+                      method: error.config.method,
+                    }
+                  : null,
+              });
+
+              let errorMsg = "加载图片详情失败";
+              if (error.response) {
+                // 服务器返回错误响应
+                if (error.response.status === 404) {
+                  errorMsg = "图片不存在或已被删除";
+                } else if (error.response.data && error.response.data.error) {
+                  errorMsg = `加载失败: ${error.response.data.error}`;
+                } else {
+                  errorMsg = `加载失败: 服务器错误 ${error.response.status}`;
+                }
+              } else if (error.request) {
+                errorMsg = "网络请求失败，请检查网络连接";
+              } else if (error.message) {
+                errorMsg = `加载失败: ${error.message}`;
+              }
+              showMessage(errorMsg, "danger");
+            });
+        } catch (globalError) {
+          console.error("全局错误:", globalError);
+          showMessage("加载图片详情时发生严重错误", "danger");
+        }
+      }
+
+      // 添加标签
+      function addTags() {
+        const newTagsInput = document.getElementById("newTags");
+        const tagsText = newTagsInput.value.trim();
+
+        if (!tagsText) return;
+
+        // 解析标签，支持逗号、空格、分号分隔
+        const tagNames = tagsText.split(/[,;\s]+/).filter((tag) => tag.trim());
+
+        axios
+          .post(`/api/photos/${currentPhotoId}/tags`, tagNames)
+          .then((response) => {
+            showMessage("标签添加成功");
+            newTagsInput.value = "";
+
+            // 重新加载标签显示
+            const photoTags = document.getElementById("photoTags");
+            photoTags.innerHTML = "";
+            response.data.photo.tags.forEach((tag) => {
+              const badge = document.createElement("span");
+              badge.className = "tag-badge badge";
+              badge.style.backgroundColor = tag.color;
+              badge.dataset.tagId = tag.id;
+              badge.innerHTML = `${tag.name} <i class="fa fa-times ml-1 opacity-70"></i>`;
+
+              // 添加删除标签事件
+              badge.addEventListener("click", function () {
+                if (confirm(`确定要移除标签 "${tag.name}" 吗？`)) {
+                  axios
+                    .delete(`/api/photos/${currentPhotoId}/tags/${tag.id}`)
+                    .then(() => {
+                      showMessage("标签移除成功");
+                      // 不重新加载整个图片详情，只更新标签显示
+                      // 找到并移除被点击的标签元素
+                      badge.remove();
+                      // 重新加载可用标签列表
+                      loadAvailableTags();
+                    })
+                    .catch(() => {
+                      showMessage("移除标签失败", "danger");
+                    });
+                }
+              });
+
+              photoTags.appendChild(badge);
+            });
+
+            // 重新加载标签筛选列表和可用标签列表
+            loadTags();
+            loadAvailableTags();
+          })
+          .catch((error) => {
+            showMessage("添加标签失败", "danger");
+          });
+      }
+      
+      // 点击添加单个标签
+      function addSingleTag(tagId, tagName) {
+        axios
+          .post(`/api/photos/${currentPhotoId}/tags`, [tagName])
+          .then((response) => {
+            showMessage(`标签"${tagName}"添加成功`);
+            
+            // 重新加载标签显示
+            const photoTags = document.getElementById("photoTags");
+            photoTags.innerHTML = "";
+            response.data.photo.tags.forEach((tag) => {
+              const badge = document.createElement("span");
+              badge.className = "tag-badge badge";
+              badge.style.backgroundColor = tag.color;
+              badge.dataset.tagId = tag.id;
+              badge.innerHTML = `${tag.name} <i class="fa fa-times ml-1 opacity-70"></i>`;
+
+              // 添加删除标签事件
+              badge.addEventListener("click", function () {
+                if (confirm(`确定要移除标签 "${tag.name}" 吗？`)) {
+                  axios
+                    .delete(`/api/photos/${currentPhotoId}/tags/${tag.id}`)
+                    .then(() => {
+                      showMessage("标签移除成功");
+                      // 不重新加载整个图片详情，只更新标签显示
+                      // 找到并移除被点击的标签元素
+                      badge.remove();
+                      // 重新加载可用标签列表
+                      loadAvailableTags();
+                    })
+                    .catch(() => {
+                      showMessage("移除标签失败", "danger");
+                    });
+                }
+              });
+
+              photoTags.appendChild(badge);
+            });
+            
+            // 重新加载可用标签列表，更新已添加标签的状态
+            loadAvailableTags();
+          })
+          .catch((error) => {
+            showMessage(`添加标签"${tagName}"失败`, "danger");
+          });
+      }
+      
+      // 加载可用标签列表
+      function loadAvailableTags() {
+        // 获取当前照片已有的标签ID列表
+        const existingTagIds = new Set();
+        document.querySelectorAll("#photoTags .tag-badge").forEach((badge) => {
+          if (badge.dataset.tagId) {
+            existingTagIds.add(badge.dataset.tagId);
+          }
+        });
+        
+        axios
+          .get("/api/tags")
+          .then((response) => {
+            const tags = response.data;
+            const availableTagsContainer = document.getElementById("availableTags");
+            
+            // 清空容器
+            availableTagsContainer.innerHTML = "";
+            
+            if (tags.length === 0) {
+              availableTagsContainer.innerHTML = '<span class="text-gray-500">暂无可用标签</span>';
+              return;
+            }
+            
+            // 填充可用标签
+            tags.forEach((tag) => {
+              const badge = document.createElement("span");
+              badge.className = `tag-badge cursor-pointer px-2 py-1 rounded text-sm transition-all duration-200 ${existingTagIds.has(tag.id.toString()) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`;
+              badge.style.backgroundColor = tag.color;
+              badge.dataset.tagId = tag.id;
+              badge.innerHTML = `${tag.name} <span class="ml-1 opacity-80">${tag.usage_count}</span>`;
+              
+              // 如果标签已存在于照片中，不添加点击事件
+              if (!existingTagIds.has(tag.id.toString())) {
+                badge.title = `点击添加标签: ${tag.name}`;
+                badge.addEventListener("click", function() {
+                  addSingleTag(tag.id, tag.name);
+                });
+              } else {
+                badge.title = `标签"${tag.name}"已添加到当前照片`;
+              }
+              
+              availableTagsContainer.appendChild(badge);
+            });
+          })
+          .catch((error) => {
+            console.error("加载可用标签失败:", error);
+            document.getElementById("availableTags").innerHTML = '<span class="text-danger">加载标签失败</span>';
+          });
+      }
+
+      // 删除图片（详情页）
+      function deletePhoto() {
+        if (!confirm("确定要删除这张图片吗？此操作不可撤销。")) {
+          return;
+        }
+
+        axios
+          .delete(`/api/photos/${currentPhotoId}`)
+          .then((response) => {
+            showMessage("图片删除成功");
+
+            // 关闭模态框
+            const modal = bootstrap.Modal.getInstance(
+              document.getElementById("photoModal")
+            );
+            modal.hide();
+
+            // 重新加载图片列表
+            loadPhotos(currentPage);
+
+            // 重新加载标签列表
+            loadTags();
+          })
+          .catch((error) => {
+            showMessage("加载图片详情失败", "danger");
+          });
+      }
+
+      // 删除图片（首页网格）
+      function deletePhotoFromGrid(photoId) {
+        if (!confirm("确定要删除这张图片吗？此操作不可撤销。")) {
+          return;
+        }
+
+        axios
+          .delete(`/api/photos/${photoId}`)
+          .then((response) => {
+            showMessage("图片删除成功");
+            
+            // 从DOM中移除该图片卡片
+            const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
+            if (photoCard) {
+              photoCard.remove();
+            }
+            
+            // 重新加载标签列表
+            loadTags();
+          })
+          .catch((error) => {
+            showMessage("删除图片失败", "danger");
+          });
+      }
+
+      // 格式化文件大小
+      function formatFileSize(bytes) {
+        if (bytes === 0) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+      }
+      
+      // 导航栏Tab切换功能
+      function setupTabNavigation() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            // 移除所有按钮的活跃状态
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // 隐藏所有内容区域
+            tabContents.forEach(content => content.classList.add('hidden'));
+            
+            // 添加当前按钮的活跃状态
+            this.classList.add('active');
+            
+            // 显示对应的内容区域
+            const activeContent = document.getElementById(`${tabId}Content`);
+            if (activeContent) {
+              activeContent.classList.remove('hidden');
+            }
+          });
+        });
+      }
+      
+      // 在页面加载时初始化Tab导航
+      document.addEventListener('DOMContentLoaded', function() {
+        // 确保DOMContentLoaded事件已经被触发，然后初始化Tab导航
+        if (window.setupTabNavigationInitialized) return;
+        window.setupTabNavigationInitialized = true;
+        setupTabNavigation();
+      });
+      
+      // 立即检查DOM是否已加载，如果已加载则初始化Tab导航
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupTabNavigation);
+      } else {
+        // DOM已经加载完成，直接初始化
+        setTimeout(setupTabNavigation, 0);
+      }
+    </script>
+  </body>
+</html>

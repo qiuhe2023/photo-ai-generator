@@ -1,0 +1,482 @@
+/* 侧边栏样式 */
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+  margin-bottom: 2rem;
+}
+
+.sidebar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.version-dropdown {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.version-dropdown-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  color: #334155;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.version-dropdown-button:hover {
+  background-color: #e2e8f0;
+}
+
+.version-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-top: 0.25rem;
+  display: none;
+}
+
+.version-dropdown-menu.show {
+  display: block;
+}
+
+.version-dropdown-item {
+  padding: 0.75rem 1rem;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.version-dropdown-item:hover {
+  background-color: #f8fafc;
+}
+
+.version-dropdown-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+/* 主内容区域 */
+.main-content {
+  margin-left: 240px;
+  transition: margin-left 0.2s ease;
+  min-height: 100vh;
+}
+
+/* 版本容器 */
+.version-container {
+  display: none;
+}
+
+.version-container.active {
+  display: block;
+}
+
+.v1-container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+}
+
+/* 全局样式 */
+:root {
+  --primary: #3b82f6;
+  --secondary: #64748b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --light: #f1f5f9;
+  --dark: #1e293b;
+  /* 额外变量 */
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --text-color: #1f2937;
+  --light-text: #6b7280;
+  --border-color: #e5e7eb;
+  --background-color: #f9fafb;
+  --card-background: #ffffff;
+}
+
+/* 右侧已创作图片区域样式 */
+#created-images-container {
+  position: sticky;
+  top: 2rem;
+}
+
+/* 滚动容器样式 */
+.scrollable-images {
+  max-height: 600px; /* 设置最大高度，超过此高度将显示滚动条 */
+  overflow-y: auto;
+  padding-right: 8px;
+  scroll-behavior: smooth;
+}
+
+/* 3列瀑布流布局样式 */
+.masonry-container {
+    column-count: 3;
+    column-gap: 15px;
+}
+
+.masonry-item {
+    break-inside: avoid;
+    margin-bottom: 15px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .masonry-container {
+        column-count: 2;
+    }
+}
+
+@media (max-width: 576px) {
+    .masonry-container {
+        column-count: 1;
+    }
+}
+
+/* 美化滚动条 */
+.scrollable-images::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-images::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.scrollable-images::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.scrollable-images::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 已创作图片项样式 */
+.created-image-item {
+  transition: transform 0.2s ease;
+  display: block;
+}
+
+.created-image-item:hover {
+  transform: translateY(-2px);
+}
+
+.created-image-item img {
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  height: auto;
+}
+
+.created-image-item:hover img {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 - 小屏幕时调整布局 */
+@media (max-width: 767px) {
+  #created-images-container {
+    position: relative;
+    top: 0;
+  }
+  
+  .scrollable-images {
+    max-height: 300px;
+  }
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background-color: #f9fafb;
+}
+
+  /* 骨架屏动画 */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* 图片卡片样式 */
+.photo-card {
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.photo-card img {
+  transition: transform 0.5s ease;
+}
+
+.photo-card:hover img {
+  transform: scale(1.05);
+}
+
+.photo-card .card-img-top {
+  overflow: hidden;
+  position: relative;
+}
+
+.photo-card .card-img-top img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* 标签徽章样式 */
+.tag-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: white;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.tag-badge:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tag-badge.active {
+  background-color: #475569 !important;
+  font-weight: bold;
+  transform: scale(1.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 上传区域样式 */
+.upload-area {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px dashed #cbd5e1;
+  padding: 4rem 2rem;
+  text-align: center;
+  border-radius: 1rem;
+  background-color: #f8fafc;
+}
+
+.upload-area:hover {
+  border-color: var(--primary);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.upload-area.dragover {
+  border-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+  transform: scale(1.02);
+}
+
+/* 模态框样式增强 */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+#photoModal .modal-content {
+  border-radius: 1rem;
+  border: none;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 消息提示样式 */
+.message {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 50;
+  animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(10%);
+  }
+}
+
+/* 截断文本 */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 按钮样式 */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background-color: #475569;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+/* 分页样式 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.pagination li {
+  list-style: none;
+}
+
+.pagination a,
+.pagination button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination a:hover,
+.pagination button:hover {
+  background-color: #f8fafc;
+  color: var(--primary);
+}
+
+.pagination .active a {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* 隐藏元素 */
+.hidden {
+  display: none;
+}
+
+/* 确保图片正确显示 */
+.photo-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}

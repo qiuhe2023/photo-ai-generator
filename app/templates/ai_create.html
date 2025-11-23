@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI二创页面 - 照片管理系统</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link href="/static/css/styles.css?v=1.1" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        margin-left: 5px;
+        cursor: help;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 200px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -100px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .loading-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid #0d6efd;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      #result-images-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .generated-image-wrapper {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .generated-image {
+        width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+      }
+
+      .image-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 10px;
+      }
+
+      /* 已创作图片项样式 */
+      .created-image-item {
+        width: 100%;
+        max-width: 100%;
+        position: relative;
+      }
+
+      .created-image-item .image-actions {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 0;
+      }
+
+      .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background-color: rgba(0, 0, 0, 0.3);
+        color: #666;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .action-btn:hover {
+        background-color: rgba(0, 0, 0, 0.5);
+        transform: scale(1.1);
+      }
+
+      .favorite-btn:hover {
+        color: #e74c3c;
+      }
+
+      .favorite-btn.favorited {
+        color: #e74c3c;
+      }
+
+      .delete-btn:hover {
+        color: #c0392b;
+        background-color: rgba(231, 76, 60, 0.1);
+      }
+
+      /* 响应式设计 - 在小屏幕上垂直堆叠图片 */
+      @media (max-width: 768px) {
+        .d-flex.gap-4 {
+          flex-direction: column;
+        }
+
+        #original-image-container,
+        #generated-image-container {
+          max-width: 100% !important;
+        }
+      }
+
+      /* 图片对比容器样式 */
+      .image-comparison-container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 参数控制容器样式 */
+      .params-control-container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 左右布局样式优化 */
+      @media (min-width: 992px) {
+        .image-comparison-container {
+          min-height: 550px; /* 确保足够的高度容纳图片区域 */
+        }
+
+        .params-control-container {
+          min-height: 550px;
+        }
+      }
+
+      /* 响应式调整 */
+      @media (max-width: 991px) {
+        .d-flex.flex-lg-row {
+          flex-direction: column;
+        }
+
+        .image-comparison-container,
+        .params-control-container {
+          width: 100%;
+        }
+      }
+
+      /* 导航栏样式 */
+      .navbar-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .navbar-tabs::-webkit-scrollbar {
+        height: 0;
+      }
+
+      .tab-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        margin: 0 0.25rem;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        text-decoration: none;
+      }
+
+      .tab-button:hover {
+        background-color: #f3f4f6;
+        color: #374151;
+      }
+
+      .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .tab-button.active:hover {
+        background-color: #2563eb;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .navbar-tabs {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .tab-button {
+          padding: 0.6rem 1rem;
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 导航栏 -->
+    <nav class="navbar bg-white shadow-sm border-b border-gray-200 mb-6">
+      <div class="container mx-auto px-4">
+        <div class="navbar-tabs flex space-x-1">
+          <a href="/" class="tab-button">
+            <i class="fa fa-upload mr-2"></i>上传
+          </a>
+          <a href="/search" class="tab-button">
+            <i class="fa fa-search mr-2"></i>搜索
+          </a>
+          <a href="/gallery" class="tab-button">
+            <i class="fa fa-th-large mr-2"></i>图库
+          </a>
+          <a href="/ai_create" class="tab-button active">
+            <i class="fa fa-magic mr-2"></i>AI二创
+          </a>
+          <a href="/creative" class="tab-button">
+            <i class="fa fa-paint-brush mr-2"></i>创意
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid" style="margin-top: 24px">
+      <div class="row justify-content-center mt-10">
+        <!-- 左侧主内容区域 -->
+        <div class="col-md-6">
+          <div class="card p-12 shadow-sm mb-12">
+            <!-- 主要内容区域 - 左右布局 -->
+            <div class="row">
+              <!-- 图片对比容器 -->
+              <div
+                class="image-comparison-container col-lg-6 p-4"
+                style="min-width: 350px"
+              >
+                <h3 class="mb-8 text-xl font-semibold">图片对比</h3>
+                <!-- 原始图片显示区域 -->
+                <div
+                  id="original-image-container"
+                  class="text-center p-10 border border-gray-200 rounded-lg bg-gray-50 mb-12"
+                  style="min-height: 400px"
+                >
+                  <p class="mb-4 text-base font-medium">原始图片</p>
+                  <p id="no-image-message">未检测到传入图片</p>
+                  <img
+                    id="original-image"
+                    src=""
+                    alt="原始图片"
+                    class="img-fluid rounded shadow-sm"
+                    style="max-height: 400px; display: none"
+                  />
+                  <button
+                    id="upload-image-btn"
+                    class="btn btn-outline-primary mt-6 px-4 py-2"
+                    style="display: none"
+                  >
+                    <i class="fa fa-upload mr-2"></i>上传新图片
+                  </button>
+                  <input
+                    type="file"
+                    id="image-upload-input"
+                    accept="image/*"
+                    style="display: none"
+                  />
+                </div>
+
+                <!-- 生成图片显示区域 -->
+                <div
+                  id="generated-image-container"
+                  class="text-center p-10 border border-gray-200 rounded-lg bg-gray-50"
+                  style="min-height: 400px"
+                >
+                  <p class="mb-4 text-base font-medium">生成结果</p>
+                  <p id="waiting-message">等待生成结果...</p>
+                  <div
+                    id="loading-spinner"
+                    class="loading-spinner"
+                    style="display: none"
+                  ></div>
+                  <div
+                    id="result-images-container"
+                    class="result-images-container"
+                    style="display: none"
+                  >
+                    <!-- 生成的图片将显示在这里 -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- 参数控制容器 -->
+              <div class="params-control-container col-lg-6 p-4">
+                <!-- 提示词输入区域 -->
+                <div class="mb-12">
+                  <label
+                    for="prompt"
+                    class="form-label fw-bold text-lg mb-3 block"
+                    >提示词</label
+                  >
+                  <textarea
+                    id="prompt"
+                    class="form-control p-4"
+                    rows="3"
+                    placeholder="请输入图片修改提示词，例如：将图片转换为油画风格，添加更明亮的色彩"
+                  ></textarea>
+                  <div class="form-text text-muted mt-2">
+                    详细的提示词将产生更好的效果
+                  </div>
+
+                  <label
+                    for="negative_prompt"
+                    class="form-label fw-bold mt-8 text-lg mb-3 block"
+                    >反向提示词</label
+                  >
+                  <textarea
+                    id="negative_prompt"
+                    class="form-control p-4"
+                    rows="2"
+                    placeholder="描述你不想要在生成图片中出现的内容，例如：模糊、变形、低质量"
+                  ></textarea>
+                </div>
+
+                <!-- 参数设置区域 -->
+                <div class="mb-12">
+                  <label class="form-label fw-bold text-lg mb-6 block"
+                    >生成参数</label
+                  >
+
+                  <div class="row gap-6 mb-6">
+                    <div class="col-md-6">
+                      <label for="model_select" class="form-label mb-2 block"
+                        >选择模型</label
+                      >
+                      <select id="model_select" class="form-select p-3">
+                        <option value="doubao-seedream-4-0-250828">
+                          即梦4.0 通用模型
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="count_select" class="form-label mb-2 block"
+                        >生成数量</label
+                      >
+                      <select id="count_select" class="form-select p-3">
+                        <option value="1">1张</option>
+                        <option value="2" selected>2张</option>
+                        <option value="3">3张</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="row gap-6">
+                    <div class="col-md-4">
+                      <label for="width" class="form-label mb-2 block"
+                        >宽度</label
+                      >
+                      <input
+                        type="number"
+                        id="width"
+                        class="form-control p-3"
+                        min="256"
+                        max="1024"
+                        value="512"
+                      />
+                    </div>
+                    <div class="col-md-4">
+                      <label for="height" class="form-label mb-2 block"
+                        >高度</label
+                      >
+                      <input
+                        type="number"
+                        id="height"
+                        class="form-control p-3"
+                        min="256"
+                        max="1024"
+                        value="512"
+                      />
+                    </div>
+                    <div class="col-md-4">
+                      <label for="steps" class="form-label mb-2 block"
+                        >采样步数</label
+                      >
+                      <input
+                        type="range"
+                        id="steps"
+                        class="form-range"
+                        min="20"
+                        max="50"
+                        step="5"
+                        value="30"
+                      />
+                      <div id="steps-value" class="text-center mt-1">30</div>
+                    </div>
+                  </div>
+
+                  <div class="row gap-6 mt-8">
+                    <div class="col-md-12">
+                      <label for="strength" class="form-label mb-3 block"
+                        >创意强度
+                        <span class="tooltip ml-2">
+                          <i class="fa fa-question-circle text-primary"></i>
+                          <span class="tooltiptext"
+                            >控制原图与生成图的相似度，值越高创意性越强</span
+                          >
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        id="strength"
+                        class="form-range"
+                        min="0.1"
+                        max="0.9"
+                        step="0.1"
+                        value="0.6"
+                      />
+                      <div id="strength-value" class="text-center mt-2">
+                        0.6
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 按钮区域 -->
+                <div class="d-flex justify-content-center gap-8 mt-10">
+                  <button
+                    id="generate-button"
+                    class="btn btn-primary px-14 py-4 rounded-lg shadow-sm text-lg font-medium"
+                    disabled
+                  >
+                    <i class="fa fa-magic mr-3"></i>生成图片
+                  </button>
+                  <button
+                    id="reset-button"
+                    class="btn btn-secondary px-14 py-4 rounded-lg shadow-sm text-lg font-medium"
+                  >
+                    <i class="fa fa-refresh mr-3"></i>重置
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 生成结果显示区域已移至图片对比区域内 -->
+        </div>
+        <!-- 右侧已创作图片展示区域 -->
+        <div class="col-md-6">
+          <div
+            id="created-images-container"
+            class="card p-6 shadow-sm mb-12 h-100"
+          >
+            <h3 class="mb-4 text-xl font-semibold text-center">已创作的图片</h3>
+            <div id="scrollable-images" class="scrollable-images">
+              <!-- 数据库中的AI生成图片 - 3列瀑布流布局 -->
+              <div class="masonry-container">
+                {% if generated_images and generated_images|length > 0 %} {% for
+                image in generated_images %}
+                <div class="masonry-item">
+                  <div class="created-image-item">
+                    <img
+                      src="{{ image.generated_image_url }}"
+                      alt="AI生成图片"
+                      class="img-fluid rounded shadow-sm"
+                    />
+                    <div class="image-actions">
+                      <button
+                        class="action-btn favorite-btn"
+                        data-image-id="{{ image.id }}"
+                      >
+                        <i class="fa fa-heart-o"></i>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        data-image-id="{{ image.id }}"
+                      >
+                        <i class="fa fa-trash-o"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %} {% else %}
+                <!-- 如果没有生成图片，显示一些示例图片 -->
+                <div class="masonry-item">
+                  <div class="created-image-item">
+                    <img
+                      src="https://picsum.photos/seed/img1/300/400"
+                      alt="示例图片"
+                      class="img-fluid rounded shadow-sm"
+                    />
+                    <div class="image-actions">
+                      <button
+                        class="action-btn favorite-btn"
+                        data-image-id="example1"
+                      >
+                        <i class="fa fa-heart-o"></i>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        data-image-id="example1"
+                      >
+                        <i class="fa fa-trash-o"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="masonry-item">
+                  <div class="created-image-item">
+                    <img
+                      src="https://picsum.photos/seed/img2/300/350"
+                      alt="示例图片"
+                      class="img-fluid rounded shadow-sm"
+                    />
+                    <div class="image-actions">
+                      <button
+                        class="action-btn favorite-btn"
+                        data-image-id="example2"
+                      >
+                        <i class="fa fa-heart-o"></i>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        data-image-id="example2"
+                      >
+                        <i class="fa fa-trash-o"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      // 获取URL参数
+      function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+          image_url: params.get("image_url"),
+          width: params.get("width") ? parseInt(params.get("width")) : 512,
+          height: params.get("height") ? parseInt(params.get("height")) : 512,
+        };
+      }
+
+      // 初始化页面
+      function initPage() {
+        const params = getUrlParams();
+
+        // 如果有图片URL参数，显示原始图片
+        if (params.image_url) {
+          const imageUrl = decodeURIComponent(params.image_url);
+          const originalImage = document.getElementById("original-image");
+          originalImage.src = imageUrl;
+          originalImage.style.display = "block";
+          document.getElementById("no-image-message").style.display = "none";
+          document.getElementById("upload-image-btn").style.display = "block";
+
+          // 更新宽度和高度输入框
+          if (params.width) {
+            document.getElementById("width").value = params.width;
+          }
+          if (params.height) {
+            document.getElementById("height").value = params.height;
+          }
+
+          // 启用生成按钮
+          document.getElementById("generate-button").disabled = false;
+        } else {
+          // 如果没有图片URL参数，显示上传按钮
+          document.getElementById("upload-image-btn").style.display = "block";
+        }
+      }
+
+      // 创意强度滑块事件
+      document
+        .getElementById("strength")
+        .addEventListener("input", function (e) {
+          document.getElementById("strength-value").textContent =
+            e.target.value;
+        });
+
+      // 采样步数滑块事件
+      document.getElementById("steps").addEventListener("input", function (e) {
+        document.getElementById("steps-value").textContent = e.target.value;
+      });
+
+      // 上传图片按钮事件
+      document
+        .getElementById("upload-image-btn")
+        .addEventListener("click", function () {
+          document.getElementById("image-upload-input").click();
+        });
+
+      // 图片上传处理
+      document
+        .getElementById("image-upload-input")
+        .addEventListener("change", function (e) {
+          if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.type.match("image.*")) {
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                const originalImage = document.getElementById("original-image");
+                originalImage.src = e.target.result;
+                originalImage.style.display = "block";
+                document.getElementById("no-image-message").style.display =
+                  "none";
+                document.getElementById("generate-button").disabled = false;
+              };
+              reader.readAsDataURL(file);
+            } else {
+              alert("请上传有效的图片文件");
+            }
+          }
+        });
+
+      // 重置按钮事件
+      document
+        .getElementById("reset-button")
+        .addEventListener("click", function () {
+          document.getElementById("prompt").value = "";
+          document.getElementById("negative_prompt").value = "";
+          document.getElementById("strength").value = "0.6";
+          document.getElementById("strength-value").textContent = "0.6";
+          document.getElementById("steps").value = "30";
+          document.getElementById("steps-value").textContent = "30";
+          document.getElementById("result-images-container").style.display =
+            "none";
+          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("waiting-message").style.display = "block";
+        });
+
+      // 收藏按钮事件处理
+      function setupFavoriteButtons() {
+        document.querySelectorAll(".favorite-btn").forEach((button) => {
+          button.addEventListener("click", function () {
+            const imageId = this.getAttribute("data-image-id");
+            const isFavorited = this.classList.contains("favorited");
+
+            if (isFavorited) {
+              // 取消收藏
+              this.classList.remove("favorited");
+              this.innerHTML = '<i class="fa fa-heart-o"></i>';
+              console.log(`取消收藏图片: ${imageId}`);
+              // 实际应用中可以调用API取消收藏
+            } else {
+              // 添加收藏
+              this.classList.add("favorited");
+              this.innerHTML = '<i class="fa fa-heart"></i>';
+              console.log(`收藏图片: ${imageId}`);
+              // 实际应用中可以调用API添加收藏
+            }
+          });
+        });
+      }
+
+      // 删除按钮事件处理
+      function setupDeleteButtons() {
+        document.querySelectorAll(".delete-btn").forEach((button) => {
+          button.addEventListener("click", function () {
+            const imageId = this.getAttribute("data-image-id");
+            const masonryItem = this.closest(".masonry-item");
+            const buttonElement = this;
+
+            // 显示确认对话框
+            if (confirm(`确定要删除这张图片吗？`)) {
+              console.log(`删除图片: ${imageId}`);
+
+              // 禁用按钮防止重复点击
+              buttonElement.disabled = true;
+
+              console.log(
+                `准备发送删除请求到: /api/generated-images/${imageId}`
+              );
+
+              // 发送DELETE请求到API
+              axios
+                .delete(`/api/generated-images/${imageId}`)
+                .then(function (response) {
+                  console.log("删除成功:", response.data);
+
+                  // 删除动画效果
+                  if (masonryItem) {
+                    masonryItem.style.transition = "opacity 0.3s ease";
+                    masonryItem.style.opacity = "0";
+
+                    setTimeout(() => {
+                      masonryItem.remove();
+                    }, 300);
+                  }
+                })
+                .catch(function (error) {
+                  console.error("删除失败:", error);
+                  if (error.response) {
+                    console.error("响应状态:", error.response.status);
+                    console.error("响应数据:", error.response.data);
+                  } else if (error.request) {
+                    console.error("请求发送失败:", error.request);
+                  } else {
+                    console.error("请求配置错误:", error.message);
+                  }
+                  alert("删除失败，请稍后重试");
+                  buttonElement.disabled = false; // 重新启用按钮
+                });
+            }
+          });
+        });
+      }
+
+      // 初始化收藏和删除按钮功能
+      function initImageActions() {
+        console.log("开始初始化图片操作按钮...");
+        setupFavoriteButtons();
+        setupDeleteButtons();
+        console.log("图片操作按钮初始化完成");
+      }
+
+      // 确保删除按钮正确绑定
+      function setupDeleteButtons() {
+        console.log("=== 开始设置删除按钮事件监听器 ===");
+        const deleteButtons = document.querySelectorAll(".delete-btn");
+        console.log(`找到 ${deleteButtons.length} 个删除按钮`);
+
+        // 清除所有现有事件监听器（防止重复绑定）
+        deleteButtons.forEach((button) => {
+          const newButton = button.cloneNode(true);
+          button.parentNode.replaceChild(newButton, button);
+        });
+
+        // 重新选择按钮并绑定新的事件监听器
+        const freshButtons = document.querySelectorAll(".delete-btn");
+        freshButtons.forEach((button, index) => {
+          const imageId = button.getAttribute("data-image-id");
+          console.log(`删除按钮 ${index + 1} - 图片ID: ${imageId}`);
+          console.log(`按钮HTML结构:`, button.outerHTML);
+
+          // 确保图片ID存在且有效
+          if (!imageId || imageId === "undefined" || imageId === null) {
+            console.error(`删除按钮 ${index + 1} 没有有效的data-image-id属性`);
+            button.style.backgroundColor = "#ffcccc"; // 视觉提示无效按钮
+            return;
+          }
+
+          // 直接在按钮上添加点击事件，使用箭头函数保留this上下文
+          button.onclick = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const imageId = this.getAttribute("data-image-id");
+            const masonryItem = this.closest(".masonry-item");
+            const buttonElement = this;
+
+            console.log(`点击删除按钮，图片ID: ${imageId}`);
+            console.log(`图片项元素:`, masonryItem);
+
+            // 显示确认对话框
+            if (confirm(`确定要删除图片ID为 ${imageId} 的图片吗？`)) {
+              console.log(`用户确认删除图片ID: ${imageId}`);
+
+              // 禁用按钮防止重复点击
+              buttonElement.disabled = true;
+              buttonElement.textContent = "删除中...";
+
+              // 构建完整的URL
+              const deleteUrl = `/api/generated-images/${imageId}`;
+              console.log(`准备发送DELETE请求到: ${deleteUrl}`);
+              console.log(`请求方法: DELETE`);
+              console.log(`请求URL: ${window.location.origin}${deleteUrl}`);
+
+              // 发送DELETE请求到API
+              axios({
+                method: "delete",
+                url: deleteUrl,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              })
+                .then(function (response) {
+                  console.log("删除成功，响应状态:", response.status);
+                  console.log("删除成功，响应数据:", response.data);
+                  alert(`删除成功！图片ID: ${imageId}`);
+
+                  // 删除动画效果
+                  if (masonryItem) {
+                    console.log("执行删除动画...");
+                    masonryItem.style.transition = "opacity 0.3s ease";
+                    masonryItem.style.opacity = "0";
+
+                    setTimeout(() => {
+                      masonryItem.remove();
+                      console.log("图片DOM元素已移除");
+                    }, 300);
+                  }
+                })
+                .catch(function (error) {
+                  console.error("删除请求失败:", error);
+                  if (error.response) {
+                    console.error("HTTP响应状态:", error.response.status);
+                    console.error("HTTP响应数据:", error.response.data);
+                    alert(
+                      `删除失败！HTTP状态: ${
+                        error.response.status
+                      }\n错误: ${JSON.stringify(error.response.data)}`
+                    );
+                  } else if (error.request) {
+                    console.error("请求已发送但未收到响应:", error.request);
+                    alert("删除失败！服务器无响应，请检查网络连接");
+                  } else {
+                    console.error("请求配置错误:", error.message);
+                    alert(`删除失败！错误: ${error.message}`);
+                  }
+                })
+                .finally(function () {
+                  // 恢复按钮状态
+                  buttonElement.disabled = false;
+                  buttonElement.textContent = "删除";
+                  console.log("删除请求完成");
+                });
+            } else {
+              console.log(`用户取消删除图片ID: ${imageId}`);
+            }
+          };
+        });
+
+        console.log("=== 删除按钮事件监听器设置完成 ===");
+      }
+
+      // 在页面加载完成后初始化
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM内容加载完成，开始初始化页面...");
+        initPage();
+        initImageActions();
+
+        // 添加额外的延迟初始化，确保所有元素都已渲染
+        setTimeout(() => {
+          console.log("额外延迟初始化，再次设置删除按钮...");
+          setupDeleteButtons();
+        }, 1000);
+      });
+
+      // 生成图片函数 - 调用即梦4.0 API
+      async function generateImage() {
+        const prompt = document.getElementById("prompt").value.trim();
+        const negativePrompt = document
+          .getElementById("negative_prompt")
+          .value.trim();
+        const strength = parseFloat(document.getElementById("strength").value);
+        const steps = parseInt(document.getElementById("steps").value);
+        const width = parseInt(document.getElementById("width").value);
+        const height = parseInt(document.getElementById("height").value);
+        const model = document.getElementById("model_select").value;
+        const count = parseInt(document.getElementById("count_select").value);
+        const originalImage = document.getElementById("original-image");
+
+        // 验证输入
+        if (!prompt) {
+          alert("请输入提示词");
+          document.getElementById("waiting-message").style.display = "block";
+          document.getElementById("loading-spinner").style.display = "none";
+          return;
+        }
+
+        try {
+          // 显示加载状态
+          document.getElementById("waiting-message").style.display = "none";
+          document.getElementById("loading-spinner").style.display = "block";
+          document.getElementById("result-images-container").style.display =
+            "none";
+
+          // 准备JSON数据对象
+          const data = {
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            strength: strength,
+            steps: steps,
+            width: width,
+            height: height,
+            model: model,
+            count: count,
+          };
+
+          // 如果是通过URL加载的图片
+          if (originalImage.src.startsWith("http")) {
+            try {
+              // 直接传递图片URL给后端，让后端处理跨域问题
+              data.image_url = originalImage.src;
+              console.log("使用图片URL:", originalImage.src);
+            } catch (error) {
+              console.error("处理图片URL时出错:", error);
+              alert("无法处理图片URL，请尝试上传图片");
+              document.getElementById("waiting-message").style.display =
+                "block";
+              document.getElementById("loading-spinner").style.display = "none";
+              return;
+            }
+          } else if (originalImage.src.startsWith("data:")) {
+            // 如果是base64格式（上传的图片）
+            try {
+              // 将base64图片直接包含在JSON中
+              data.image_base64 = originalImage.src.split(",")[1]; // 移除data:image/jpeg;base64,前缀
+              console.log("使用base64图片");
+            } catch (error) {
+              console.error("处理base64图片时出错:", error);
+              alert("无法处理上传的图片");
+              document.getElementById("waiting-message").style.display =
+                "block";
+              document.getElementById("loading-spinner").style.display = "none";
+              return;
+            }
+          }
+
+          // 调用后端API，发送JSON格式数据
+          const response = await axios.post("/api/image-to-image", data, {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          // 处理响应
+          if (response.data && response.data.results) {
+            const resultsContainer = document.getElementById(
+              "result-images-container"
+            );
+            resultsContainer.innerHTML = "";
+            resultsContainer.style.display = "block";
+
+            // 显示生成的每张图片
+            response.data.results.forEach((result, index) => {
+              const imageWrapper = document.createElement("div");
+              imageWrapper.className = "generated-image-wrapper";
+
+              if (response.data.results.length > 1) {
+                const imageLabel = document.createElement("div");
+                imageLabel.className = "text-center text-sm text-gray-500 mb-2";
+                imageLabel.textContent = `结果 ${index + 1}`;
+                imageWrapper.appendChild(imageLabel);
+              }
+
+              const img = document.createElement("img");
+              img.src = result.image_url;
+              img.alt = `生成结果 ${index + 1}`;
+              img.className = "generated-image";
+
+              const actionsDiv = document.createElement("div");
+              actionsDiv.className = "image-actions";
+
+              const saveButton = document.createElement("button");
+              saveButton.className = "btn btn-primary btn-sm";
+              saveButton.innerHTML = '<i class="fa fa-save mr-1"></i>保存';
+              saveButton.title = "保存到图库";
+              saveButton.onclick = () => saveGeneratedImage(result.image_id);
+
+              const downloadButton = document.createElement("button");
+              downloadButton.className = "btn btn-success btn-sm";
+              downloadButton.innerHTML =
+                '<i class="fa fa-download mr-1"></i>下载';
+              downloadButton.title = "下载图片";
+              downloadButton.onclick = () => downloadImage(result.image_url);
+
+              actionsDiv.appendChild(saveButton);
+              actionsDiv.appendChild(downloadButton);
+              imageWrapper.appendChild(img);
+              imageWrapper.appendChild(actionsDiv);
+              resultsContainer.appendChild(imageWrapper);
+            });
+          }
+
+          // 隐藏加载状态
+          document.getElementById("loading-spinner").style.display = "none";
+          console.log("图片生成成功");
+        } catch (error) {
+          console.error("API调用失败:", error);
+          alert(
+            `图片生成失败: ${
+              error.response?.data?.error || error.message || "请稍后重试"
+            }`
+          );
+          document.getElementById("waiting-message").style.display = "block";
+          document.getElementById("loading-spinner").style.display = "none";
+        }
+      }
+
+      // 保存生成的图片到用户图库
+      async function saveGeneratedImage(imageId) {
+        try {
+          const response = await axios.post("/api/save_image", {
+            image_id: imageId,
+          });
+
+          if (response.data.success) {
+            alert("图片已成功保存到您的图库");
+          } else {
+            alert("保存失败: " + (response.data.error || "未知错误"));
+          }
+        } catch (error) {
+          console.error("保存图片失败:", error);
+          alert("保存失败，请稍后重试");
+        }
+      }
+
+      // 下载图片
+      function downloadImage(imageUrl) {
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.download = `ai-generated-${Date.now()}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // 生成按钮点击事件
+      document
+        .getElementById("generate-button")
+        .addEventListener("click", function () {
+          // 显示加载状态
+          document.getElementById("waiting-message").style.display = "block";
+          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("result-images-container").style.display =
+            "none";
+
+          // 调用生成图片函数
+          generateImage();
+        });
+
+      // 页面加载完成后初始化
+      window.addEventListener("load", initPage);
+    </script>
+  </body>
+</html>

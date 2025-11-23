@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图片管理系统 - v1版本</title>
+    <style>
+      /* 原生CSS基础样式 */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        display: flex;
+        height: 100vh;
+      }
+      
+      /* 侧边栏样式 */
+      .sidebar {
+        width: 200px;
+        background-color: #f0f0f0;
+        padding: 20px;
+        border-right: 1px solid #ddd;
+      }
+      
+      .sidebar-header h3 {
+        margin-bottom: 15px;
+        font-size: 16px;
+      }
+      
+      .version-dropdown-button {
+        width: 100%;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .version-dropdown-menu {
+        display: none;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        margin-top: 5px;
+        position: absolute;
+        width: 150px;
+        z-index: 10;
+      }
+      
+      .version-dropdown-menu.show {
+        display: block;
+      }
+      
+      .version-dropdown-item {
+        padding: 10px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .version-dropdown-item:last-child {
+        border-bottom: none;
+      }
+      
+      .version-dropdown-item:hover,
+      .version-dropdown-item.active {
+        background-color: #e9e9e9;
+      }
+      
+      /* 主内容区域 */
+      .main-content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      
+      /* 容器样式 */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      /* 头部样式 */
+      header {
+        margin-bottom: 20px;
+      }
+      
+      header h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      
+      /* 统计信息 */
+      .stats {
+        margin-bottom: 20px;
+      }
+      
+      .stats span {
+        margin-right: 15px;
+        background-color: #f0f0f0;
+        padding: 5px 10px;
+        border-radius: 3px;
+      }
+      
+      /* 上传区域 */
+      .upload-area {
+        border: 2px dashed #ddd;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .upload-area.dragover {
+        background-color: #f5f5f5;
+        border-color: #999;
+      }
+      
+      .upload-area input[type="file"] {
+        display: none;
+      }
+      
+      /* 按钮样式 */
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+        border: none;
+        border-radius: 3px;
+      }
+      
+      .btn-primary {
+        background-color: #007bff;
+        color: white;
+      }
+      
+      .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+      }
+      
+      .btn-danger {
+        background-color: #dc3545;
+        color: white;
+      }
+      
+      /* 标签筛选 */
+      .tag-filters {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+      }
+      
+      .tag-filter {
+        display: inline-block;
+        background-color: #e9ecef;
+        padding: 5px 10px;
+        margin: 5px;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      
+      .tag-filter.active {
+        background-color: #007bff;
+        color: white;
+      }
+      
+      /* 图片网格 */
+      .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      
+      .photo-card {
+        border: 1px solid #ddd;
+        padding: 10px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      
+      .photo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      
+      .photo-card:hover .ai-btn {
+        opacity: 1;
+      }
+      
+      .photo-card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+      }
+      
+      .photo-info {
+        padding-top: 10px;
+      }
+      
+      /* 分页 */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      
+      .pagination button {
+        margin: 0 5px;
+        padding: 5px 10px;
+      }
+      
+      /* 模态框 */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+      }
+      
+      .modal.show {
+        display: block;
+      }
+      
+      .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 90%;
+        max-width: 1000px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+      
+      .modal-body {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .modal-content img {
+        max-width: 100%;
+        max-height: 50vh;
+        margin-bottom: 20px;
+      }
+      
+      /* 表单元素 */
+      input, textarea {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+      
+      /* 标签显示 */
+      .tag {
+        display: inline-block;
+        background-color: #f0f0f0;
+        padding: 3px 8px;
+        margin: 3px;
+        border-radius: 3px;
+        font-size: 14px;
+      }
+      
+      /* 消息提示 */
+      .message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px;
+        border-radius: 3px;
+        color: white;
+        z-index: 1000;
+        display: none;
+      }
+      
+      .message.success {
+        background-color: #28a745;
+      }
+      
+      .message.danger {
+        background-color: #dc3545;
+      }
+      
+      .message.warning {
+        background-color: #ffc107;
+        color: #333;
+      }
+      
+      /* 加载状态 */
+      .loading {
+        text-align: center;
+        padding: 20px;
+      }
+      
+      /* 骨架屏 */
+      .shimmer {
+        background-color: #f0f0f0;
+        animation: shimmer 1.5s infinite;
+      }
+      
+      @keyframes shimmer {
+        0% { opacity: 0.6; }
+        50% { opacity: 0.3; }
+        100% { opacity: 0.6; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h3>版本切换</h3>
+      </div>
+      <div class="version-dropdown">
+        <button id="versionDropdownButton" class="version-dropdown-button">
+          <span id="currentVersionText">当前版本：v1</span>
+          <span>&darr;</span>
+        </button>
+        <div id="versionDropdownMenu" class="version-dropdown-menu">
+          <div class="version-dropdown-item active" data-version="v1">
+            v1（当前页面）
+          </div>
+          <div class="version-dropdown-item" data-version="v2">
+            v2（完整版）
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="main-content">
+      <div class="container">
+        <!-- 顶部导航 - 已移除标题 -->
+
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+          <input
+            type="file"
+            id="fileInput"
+            multiple
+            accept="image/*"
+            style="display: none"
+          />
+          <h3>上传图片</h3>
+          <p>拖拽图片到此处或点击此处选择图片</p>
+          <p style="font-size: 12px; margin-top: 10px; color: #666">
+            支持 PNG、JPG、JPEG、GIF、WebP 格式，单个文件最大 100MB
+          </p>
+        </div>
+
+        <!-- 标签筛选 -->
+        <div class="tag-filters">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px;">
+            <div>标签筛选:</div>
+            <div id="tagFilters" style="flex-grow: 1;"></div>
+            <div style="display: flex; gap: 10px;">
+              <span id="totalPhotos" style="background-color: #f0f0f0; padding: 5px 10px; border-radius: 3px;">0 张图片</span>
+              <span id="totalTags" style="background-color: #f0f0f0; padding: 5px 10px; border-radius: 3px;">0 个标签</span>
+            </div>
+            <button
+              id="clearFilterBtn"
+              class="btn-secondary"
+              style="display: none"
+              onclick="clearFilter()"
+            >
+              清除筛选
+            </button>
+          </div>
+        </div>
+
+        <!-- 图片网格 -->
+        <div id="photoGrid" class="photo-grid"></div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+
+    <!-- 图片详情模态框 -->
+    <div class="modal" id="photoModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="photoTitle">图片详情</h3>
+          <button class="btn-secondary" onclick="closeModal()">关闭</button>
+        </div>
+        <div class="modal-body">
+          <img id="photoImage" alt="图片预览">
+          
+          <!-- 图片信息 -->
+          <div>
+            <h4>图片信息</h4>
+            <p><strong>文件名:</strong> <span id="photoFilename"></span></p>
+            <p><strong>尺寸:</strong> <span id="photoSize"></span></p>
+            <p><strong>大小:</strong> <span id="photoFileSize"></span></p>
+            <p><strong>上传时间:</strong> <span id="photoCreatedAt"></span></p>
+            <p><strong>浏览次数:</strong> <span id="photoViewCount"></span></p>
+          </div>
+          
+          <!-- 描述 -->
+          <div style="margin-top: 20px">
+            <h4>描述</h4>
+            <textarea
+              id="photoDescription"
+              rows="5"
+              disabled
+            ></textarea>
+          </div>
+          
+          <!-- 标签 -->
+          <div style="margin-top: 20px">
+            <h4>标签</h4>
+            <!-- 可用标签选择区域 -->
+            <div style="margin-bottom: 10px">
+              <label style="display: block; margin-bottom: 5px; font-size: 14px;">可用标签（点击添加）</label>
+              <div id="availableTags" style="display: flex; flex-wrap: wrap; gap: 5px; max-height: 100px; overflow-y: auto; padding: 5px; background-color: #f5f5f5; border-radius: 3px;"></div>
+            </div>
+            
+            <!-- 添加新标签 -->
+            <div style="margin-bottom: 10px">
+              <input
+                type="text"
+                id="newTags"
+                placeholder="输入新标签，用逗号分隔"
+              />
+              <button class="btn-primary" style="margin-left: 5px" onclick="addTags()">
+                添加
+              </button>
+            </div>
+            
+            <!-- 已有标签显示区域 -->
+            <div id="photoTags" style="margin-bottom: 10px"></div>
+          </div>
+          
+          <!-- 操作按钮 -->
+          <div style="margin-top: 20px; display: flex; gap: 10px">
+            <button
+              id="editDescriptionBtn"
+              class="btn-secondary"
+              onclick="toggleEditDescription()"
+            >
+              编辑描述
+            </button>
+            <button
+              id="saveDescriptionBtn"
+              class="btn-primary"
+              style="display: none"
+              onclick="saveDescription()"
+            >
+              保存描述
+            </button>
+            <button
+              class="btn-danger"
+              onclick="deletePhoto()"
+            >
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="message" class="message"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      let currentPage = 1;
+      let currentTagId = null;
+      let currentPhotoId = null;
+      let isLoading = false;
+      let editingDescription = false;
+
+      // 显示消息提示
+      function showMessage(content, type = "success") {
+        const message = document.getElementById("message");
+        message.className = `message ${type}`;
+        message.textContent = content;
+        message.style.display = "block";
+
+        // 自动隐藏
+        setTimeout(() => {
+          message.style.display = "none";
+        }, 3000);
+      }
+
+      // 显示加载状态
+      function showLoading(element) {
+        const originalContent = element.innerHTML;
+        element.dataset.originalContent = originalContent;
+
+        // 为图片网格显示骨架屏
+        if (element.id === "photoGrid") {
+          let skeletonHtml = '';
+          for (let i = 0; i < 8; i++) {
+            skeletonHtml += '<div class="shimmer" style="height: 200px;"></div>';
+          }
+          element.innerHTML = skeletonHtml;
+        } else {
+          element.innerHTML = '<div class="loading">加载中...</div>';
+        }
+        element.disabled = true;
+        return originalContent;
+      }
+
+      // 隐藏加载状态
+      function hideLoading(element) {
+        if (element && element.dataset.originalContent) {
+          element.innerHTML = element.dataset.originalContent;
+          element.disabled = false;
+        }
+      }
+
+      // 页面加载完成后初始化
+      document.addEventListener("DOMContentLoaded", function () {
+        setupVersionSwitcher();
+        loadPhotos();
+        loadTags();
+        setupUpload();
+
+        // 监听标签输入框回车事件
+        document
+          .getElementById("newTags")
+          .addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addTags();
+            }
+          });
+      });
+
+      // 版本切换功能
+      function setupVersionSwitcher() {
+        const versionDropdownButton = document.getElementById("versionDropdownButton");
+        const versionDropdownMenu = document.getElementById("versionDropdownMenu");
+        const versionItems = document.querySelectorAll(".version-dropdown-item");
+
+        // 切换下拉菜单显示/隐藏
+        versionDropdownButton.addEventListener("click", function () {
+          versionDropdownMenu.classList.toggle("show");
+        });
+
+        // 点击其他区域关闭下拉菜单
+        document.addEventListener("click", function (event) {
+          if (!event.target.closest(".version-dropdown")) {
+            versionDropdownMenu.classList.remove("show");
+          }
+        });
+
+        // 版本选择
+        versionItems.forEach((item) => {
+          item.addEventListener("click", function () {
+            const version = this.getAttribute("data-version");
+            
+            // 如果选择v2版本，跳转到index.html
+            if (version === "v2") {
+              window.location.href = "/";
+            }
+          });
+        });
+      }
+
+      // 设置上传区域
+      function setupUpload() {
+        const uploadArea = document.getElementById("uploadArea");
+        const fileInput = document.getElementById("fileInput");
+        const uploadButton = uploadArea.querySelector("button");
+
+        // 拖拽事件
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+          uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+          uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+          uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+          uploadArea.classList.add("dragover");
+        }
+
+        function unhighlight() {
+          uploadArea.classList.remove("dragover");
+        }
+
+        // 处理文件拖放
+        uploadArea.addEventListener("drop", handleDrop, false);
+
+        function handleDrop(e) {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          handleFiles(files);
+        }
+
+        // 处理文件选择
+        fileInput.addEventListener("change", function () {
+          handleFiles(this.files);
+        });
+
+        // 添加点击上传区域事件
+        uploadArea.addEventListener("click", function () {
+          fileInput.click();
+        });
+      }
+
+      // AI处理图片
+      function aiProcessPhoto(photoId) {
+        showMessage(`AI处理图片 ${photoId}`, "info");
+        // 这里可以添加AI处理的具体逻辑
+      }
+
+      // 处理文件上传
+      function handleFiles(files) {
+        if (files.length === 0) return;
+
+        const uploadArea = document.getElementById("uploadArea");
+        const originalContent = showLoading(uploadArea);
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+          formData.append("files", files[i]);
+        }
+
+        axios
+          .post("/api/upload", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((response) => {
+            hideLoading(uploadArea);
+
+            if (response.data.success) {
+              showMessage(`成功上传 ${response.data.count} 张图片`);
+              loadPhotos();
+            } else {
+              showMessage("上传失败", "danger");
+            }
+
+            if (response.data.errors && response.data.errors.length > 0) {
+              response.data.errors.forEach((error) => {
+                showMessage(error, "warning");
+              });
+            }
+          })
+          .catch((error) => {
+            hideLoading(uploadArea);
+            showMessage(
+              "上传失败: " + (error.response?.data?.error || "网络错误"),
+              "danger"
+            );
+          });
+      }
+
+      // 加载图片列表
+      function loadPhotos(page = 1) {
+        if (isLoading) return;
+        isLoading = true;
+
+        const photoGrid = document.getElementById("photoGrid");
+        showLoading(photoGrid);
+
+        currentPage = page;
+        let url = `/api/photos?page=${page}`;
+        if (currentTagId) {
+          url += `&tag_id=${currentTagId}`;
+        }
+
+        axios
+          .get(url)
+          .then((response) => {
+            hideLoading(photoGrid);
+            isLoading = false;
+
+            const photos = response.data.photos;
+            const pagination = response.data.pagination;
+
+            // 清空网格
+            photoGrid.innerHTML = "";
+
+            // 更新总数显示
+            document.getElementById("totalPhotos").textContent = `共 ${response.data.pagination?.total || 0} 张图片`;
+
+            // 添加图片卡片
+            photos.forEach((photo) => {
+              const card = document.createElement("div");
+              card.className = "photo-card";
+              card.innerHTML = `
+                <div style="position: relative; height: 150px; overflow: hidden;">
+                  <img 
+                    src="${photo.thumbnail_url || photo.tos_url}" 
+                    alt="图片" 
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                  >
+                  <button 
+                    class="ai-btn" 
+                    data-id="${photo.id}"
+                    style="position: absolute; bottom: 5px; right: 5px; background-color: #2563eb; color: white; font-size: 12px; padding: 2px 6px; border-radius: 4px; border: none; opacity: 0; transition: opacity 0.3s ease; cursor: pointer;"
+                  >
+                    ai
+                  </button>
+                </div>
+                <div class="photo-info">
+                  <div style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${photo.filename}
+                  </div>
+                  <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    ${new Date(photo.created_at).toLocaleString()}
+                  </div>
+                </div>
+              `;
+              
+              // 为AI按钮添加点击事件
+            const aiBtn = card.querySelector('.ai-btn');
+            aiBtn.addEventListener('click', function(event) {
+              event.stopPropagation(); // 阻止事件冒泡
+              aiProcessPhoto(photo.id);
+            });
+            
+            card.addEventListener("click", () => {
+              openPhotoModal(photo.id);
+            });
+              
+              photoGrid.appendChild(card);
+            });
+
+            // 更新分页
+            updatePagination(pagination);
+          })
+          .catch((error) => {
+            hideLoading(photoGrid);
+            isLoading = false;
+            showMessage("加载图片失败", "danger");
+          });
+      }
+
+      // 更新分页
+      function updatePagination(pagination) {
+        const paginationEl = document.getElementById("pagination");
+        paginationEl.innerHTML = "";
+
+        // 上一页
+        if (pagination.current_page > 1) {
+          const prevBtn = document.createElement("button");
+          prevBtn.textContent = "上一页";
+          prevBtn.onclick = () => loadPhotos(pagination.current_page - 1);
+          paginationEl.appendChild(prevBtn);
+        }
+
+        // 页码按钮
+        for (let i = 1; i <= pagination.total_pages; i++) {
+          const pageBtn = document.createElement("button");
+          pageBtn.textContent = i;
+          if (i === pagination.current_page) {
+            pageBtn.disabled = true;
+            pageBtn.style.backgroundColor = "#ddd";
+          }
+          pageBtn.onclick = () => loadPhotos(i);
+          paginationEl.appendChild(pageBtn);
+        }
+
+        // 下一页
+        if (pagination.current_page < pagination.total_pages) {
+          const nextBtn = document.createElement("button");
+          nextBtn.textContent = "下一页";
+          nextBtn.onclick = () => loadPhotos(pagination.current_page + 1);
+          paginationEl.appendChild(nextBtn);
+        }
+      }
+
+      // 加载标签列表
+      function loadTags() {
+        axios
+          .get("/api/tags")
+          .then((response) => {
+            const tags = response.data;
+            const tagFilters = document.getElementById("tagFilters");
+            
+            // 更新标签总数
+            document.getElementById("totalTags").textContent = `共 ${tags.length} 个标签`;
+            
+            // 添加标签筛选按钮
+            tags.forEach((tag) => {
+              const tagEl = document.createElement("div");
+              tagEl.className = `tag-filter ${currentTagId === tag.id ? 'active' : ''}`;
+              tagEl.textContent = tag.name;
+              tagEl.dataset.tagId = tag.id;
+              
+              tagEl.addEventListener("click", function () {
+                const tagId = parseInt(this.dataset.tagId);
+                if (currentTagId === tagId) {
+                  // 如果已经选中，取消选择
+                  currentTagId = null;
+                  this.classList.remove("active");
+                  document.getElementById("clearFilterBtn").style.display = "none";
+                } else {
+                  // 选择新标签
+                  currentTagId = tagId;
+                  // 移除其他标签的active状态
+                  document.querySelectorAll('.tag-filter').forEach(el => {
+                    el.classList.remove('active');
+                  });
+                  // 添加当前标签的active状态
+                  this.classList.add("active");
+                  document.getElementById("clearFilterBtn").style.display = "inline-block";
+                }
+                // 重新加载图片
+                loadPhotos(1);
+              });
+              
+              tagFilters.appendChild(tagEl);
+            });
+          })
+          .catch((error) => {
+            console.error("加载标签失败", error);
+          });
+      }
+
+      // 清除筛选
+      function clearFilter() {
+        currentTagId = null;
+        document.querySelectorAll('.tag-filter').forEach(el => {
+          el.classList.remove('active');
+        });
+        document.getElementById("clearFilterBtn").style.display = "none";
+        loadPhotos(1);
+      }
+
+      // 打开图片详情模态框
+      function openPhotoModal(photoId) {
+        currentPhotoId = photoId;
+        const modal = document.getElementById("photoModal");
+        modal.classList.add("show");
+        
+        // 加载图片详情
+        axios
+          .get(`/api/photos/${photoId}`)
+          .then((response) => {
+            const photo = response.data;
+            
+            document.getElementById("photoTitle").textContent = photo.filename;
+            document.getElementById("photoImage").src = photo.tos_url;
+            document.getElementById("photoDescription").value = photo.description || "";
+            document.getElementById("photoFilename").textContent = photo.filename;
+            document.getElementById("photoSize").textContent = `${photo.width} x ${photo.height}`;
+            document.getElementById("photoFileSize").textContent = formatFileSize(photo.file_size);
+            document.getElementById("photoCreatedAt").textContent = new Date(photo.created_at).toLocaleString();
+            document.getElementById("photoViewCount").textContent = photo.view_count || 0;
+            
+            // 加载标签
+            const photoTags = document.getElementById("photoTags");
+            photoTags.innerHTML = "";
+            
+            photo.tags.forEach((tag) => {
+              const tagEl = document.createElement("span");
+              tagEl.className = "tag";
+              tagEl.textContent = tag.name;
+              photoTags.appendChild(tagEl);
+            });
+          })
+          .catch((error) => {
+            showMessage("加载图片详情失败", "danger");
+          });
+      }
+
+      // 关闭模态框
+      function closeModal() {
+        const modal = document.getElementById("photoModal");
+        modal.classList.remove("show");
+      }
+
+      // 切换编辑描述
+      function toggleEditDescription() {
+        const descriptionInput = document.getElementById("photoDescription");
+        const editBtn = document.getElementById("editDescriptionBtn");
+        const saveBtn = document.getElementById("saveDescriptionBtn");
+        
+        if (editingDescription) {
+          // 取消编辑
+          descriptionInput.disabled = true;
+          editBtn.textContent = "编辑描述";
+          saveBtn.style.display = "none";
+        } else {
+          // 开始编辑
+          descriptionInput.disabled = false;
+          descriptionInput.focus();
+          editBtn.textContent = "取消";
+          saveBtn.style.display = "inline-block";
+        }
+        
+        editingDescription = !editingDescription;
+      }
+
+      // 保存描述
+      function saveDescription() {
+        const description = document.getElementById("photoDescription").value;
+        
+        axios
+          .patch(`/api/photos/${currentPhotoId}`, { description })
+          .then(() => {
+            showMessage("描述已更新");
+            toggleEditDescription();
+          })
+          .catch(() => {
+            showMessage("更新描述失败", "danger");
+          });
+      }
+
+      // 添加标签
+      function addTags() {
+        const newTagsInput = document.getElementById("newTags");
+        const tagsText = newTagsInput.value.trim();
+        
+        if (!tagsText) return;
+        
+        const tags = tagsText.split(',').map(tag => tag.trim()).filter(tag => tag);
+        
+        axios
+          .post(`/api/photos/${currentPhotoId}/tags`, { tags })
+          .then(() => {
+            showMessage("标签已添加");
+            newTagsInput.value = "";
+            // 重新加载图片详情以更新标签
+            openPhotoModal(currentPhotoId);
+            // 重新加载标签列表
+            loadTags();
+          })
+          .catch(() => {
+            showMessage("添加标签失败", "danger");
+          });
+      }
+
+      // 删除图片
+      function deletePhoto() {
+        if (confirm("确定要删除这张图片吗？")) {
+          axios
+            .delete(`/api/photos/${currentPhotoId}`)
+            .then(() => {
+              showMessage("图片已删除");
+              closeModal();
+              loadPhotos();
+              loadTags();
+            })
+            .catch(() => {
+              showMessage("删除图片失败", "danger");
+            });
+        }
+      }
+
+      // 格式化文件大小
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+
+      // 点击模态框外部关闭
+      document.getElementById("photoModal").addEventListener("click", function (event) {
+        if (event.target === this) {
+          closeModal();
+        }
+      });
+    </script>
+  </body>
+</html>
